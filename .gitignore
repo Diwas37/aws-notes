@@ -1,2 +1,12 @@
-.gstack/
 .DS_Store
+
+# tool / agent config — machine-local, contains absolute paths
+.gstack/
+.claude/
+.codex/
+.cursor/
+.agent/
+.agents/
+.gemini/
+.kiro/
+.opencode/
