@@ -3,173 +3,331 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>Day 00 — Orientation | AWS SAA-C03</title>
 <style>
 :root{
-  --bg:#fbfaf8; --panel:#ffffff; --ink:#1c1a17; --ink-2:#4a4642; --ink-3:#7d7770;
-  --line:#e5e0d8; --line-2:#d3ccc1;
-  --accent:#c2410c; --accent-soft:#fff2ea;
-  --d1:#b45309; --d2:#0f766e; --d3:#4338ca; --d4:#9d174d;
-  --ok:#15803d; --ok-soft:#effaf1;
-  --warn:#a16207; --warn-soft:#fefaec;
-  --bad:#b91c1c; --bad-soft:#fef2f2;
-  --info:#1d4ed8; --info-soft:#eff4ff;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
+  --bg:#fbfaf8; --panel:#ffffff; --sunk:#f5f2ed;
+  --ink:#1c1a17; --ink-2:#4a4642; --ink-3:#6b665e;
+  --line:#e5e0d8; --line-2:#cfc7bb; --swatch-line:#8f877c;
+  --accent:#b03c09; --accent-soft:#fdf1ea; --accent-line:#e8c3ac;
+
+  --d1:#9a4508; --d2:#0f6a63; --d3:#3b34b0; --d4:#8f1147;
+  --on-domain:#ffffff;
+
+  --good:#136c36; --good-soft:#ecf7ef; --good-line:#bcdfc7;
+  --note:#1a4bb8; --note-soft:#eef3fd; --note-line:#c3d3f2;
+  --caution:#8a5300; --caution-soft:#fdf4e3; --caution-line:#e8d3a8;
+  --danger:#a81f1f; --danger-soft:#fdf0ef; --danger-line:#eec4c1;
+
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,sans-serif;
+  --measure:68ch;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
-    --bg:#141312; --panel:#1c1b19; --ink:#f0ece6; --ink-2:#bdb6ac; --ink-3:#8b847a;
-    --line:#2e2c28; --line-2:#403c36;
-    --accent:#fb923c; --accent-soft:#2a1a10;
-    --d1:#f0a44a; --d2:#4fb3a5; --d3:#8b90f5; --d4:#e879a8;
-    --ok:#4ade80; --ok-soft:#12251a;
-    --warn:#facc15; --warn-soft:#251f0d;
-    --bad:#f87171; --bad-soft:#2a1414;
-    --info:#7aa2f7; --info-soft:#141c2e;
+    --bg:#141312; --panel:#1c1b19; --sunk:#232120;
+    --ink:#f0ece6; --ink-2:#c4bdb3; --ink-3:#948d82;
+    --line:#2e2c28; --line-2:#403c36; --swatch-line:#5f584f;
+    --accent:#fb923c; --accent-soft:#2a1a10; --accent-line:#5a3a20;
+
+    --d1:#f0a44a; --d2:#4fb3a5; --d3:#9095f7; --d4:#ec84b0;
+    --on-domain:#141312;
+
+    --good:#5cd68a; --good-soft:#12241a; --good-line:#2b5138;
+    --note:#88aefb; --note-soft:#141c2e; --note-line:#2c3f66;
+    --caution:#f0c250; --caution-soft:#241f0e; --caution-line:#4e421d;
+    --danger:#fa8a83; --danger-soft:#2a1513; --danger-line:#5c2c28;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#141312; --panel:#1c1b19; --ink:#f0ece6; --ink-2:#bdb6ac; --ink-3:#8b847a;
-  --line:#2e2c28; --line-2:#403c36;
-  --accent:#fb923c; --accent-soft:#2a1a10;
-  --d1:#f0a44a; --d2:#4fb3a5; --d3:#8b90f5; --d4:#e879a8;
-  --ok:#4ade80; --ok-soft:#12251a;
-  --warn:#facc15; --warn-soft:#251f0d;
-  --bad:#f87171; --bad-soft:#2a1414;
-  --info:#7aa2f7; --info-soft:#141c2e;
+  --bg:#141312; --panel:#1c1b19; --sunk:#232120;
+  --ink:#f0ece6; --ink-2:#c4bdb3; --ink-3:#948d82;
+  --line:#2e2c28; --line-2:#403c36; --swatch-line:#5f584f;
+  --accent:#fb923c; --accent-soft:#2a1a10; --accent-line:#5a3a20;
+
+  --d1:#f0a44a; --d2:#4fb3a5; --d3:#9095f7; --d4:#ec84b0;
+  --on-domain:#141312;
+
+  --good:#5cd68a; --good-soft:#12241a; --good-line:#2b5138;
+  --note:#88aefb; --note-soft:#141c2e; --note-line:#2c3f66;
+  --caution:#f0c250; --caution-soft:#241f0e; --caution-line:#4e421d;
+  --danger:#fa8a83; --danger-soft:#2a1513; --danger-line:#5c2c28;
 }
 
 *{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
 body{
-  margin:0; background:var(--bg); color:var(--ink);
-  font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,sans-serif;
-  -webkit-font-smoothing:antialiased;
+  margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased;
 }
-.wrap{max-width:860px;margin:0 auto;padding:0 24px 96px}
+.wrap{max-width:880px;margin:0 auto;padding:0 24px 80px}
+p,ul,ol,.thesis{max-width:var(--measure)}
+
+a{color:var(--accent)}
+a:focus-visible,[tabindex]:focus-visible,summary:focus-visible{
+  outline:2px solid var(--accent);outline-offset:3px;border-radius:3px
+}
+.skip{
+  position:absolute;left:-9999px;top:0;background:var(--panel);color:var(--ink);
+  padding:12px 18px;border:1px solid var(--accent);border-radius:0 0 8px 0;z-index:10
+}
+.skip:focus{left:0}
 
 /* ---------- header ---------- */
-header.top{border-bottom:1px solid var(--line);margin-bottom:40px;padding:48px 0 28px}
-.eyebrow{
-  font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;
-  color:var(--accent);margin-bottom:14px
-}
-h1{font-size:clamp(30px,5vw,42px);line-height:1.12;margin:0 0 12px;letter-spacing:-.02em}
-.sub{color:var(--ink-2);font-size:17px;margin:0;max-width:56ch}
-.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+header.top{border-bottom:1px solid var(--line);margin-bottom:36px;padding:52px 0 30px}
+h1{font-size:clamp(29px,5vw,40px);line-height:1.12;margin:0 0 14px;letter-spacing:-.021em;max-width:30ch}
+.sub{color:var(--ink-2);font-size:17px;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:7px;margin-top:24px;max-width:none}
 .chip{
-  font:600 11.5px/1 var(--mono);letter-spacing:.06em;padding:6px 10px;
-  border:1px solid var(--line-2);border-radius:999px;color:var(--ink-2)
+  font:600 12px/1.35 var(--mono);padding:6px 10px;
+  border:1px solid var(--line-2);border-radius:6px;color:var(--ink-2);background:var(--panel)
 }
-.chip.on{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.chip.on{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft);font-weight:700}
+
+/* ---------- do-this-week panel ---------- */
+.now{
+  border:1px solid var(--accent-line);background:var(--accent-soft);
+  border-radius:10px;padding:22px 24px;margin:0 0 34px
+}
+.now h2{
+  font-size:17px;font-weight:700;letter-spacing:-.01em;margin:0 0 4px;
+  color:var(--ink);text-transform:none;font-family:var(--sans)
+}
+.now p.lede{font-size:14px;color:var(--ink-2);margin:0 0 16px}
+.now ol{margin:0;padding-left:0;list-style:none;counter-reset:n;max-width:none}
+.now li{
+  counter-increment:n;position:relative;padding:0 0 11px 34px;font-size:15px;color:var(--ink-2)
+}
+.now li:last-child{padding-bottom:0}
+.now li::before{
+  content:counter(n);position:absolute;left:0;top:1px;width:22px;height:22px;border-radius:5px;
+  background:var(--accent);color:var(--bg);font:700 11px/22px var(--mono);text-align:center
+}
+.now li b{color:var(--ink);font-weight:650}
+.now a{font-size:13px;white-space:nowrap}
+
+/* ---------- toc ---------- */
+nav.toc{margin:0 0 46px;border-top:1px solid var(--line);padding-top:20px}
+nav.toc h2{
+  font:700 11px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-3);margin:0 0 12px
+}
+nav.toc ol{list-style:none;padding:0;margin:0;columns:2;column-gap:32px;max-width:none}
+nav.toc li{margin-bottom:7px;break-inside:avoid;font-size:14px}
+nav.toc a{text-decoration:none;color:var(--ink-2);display:flex;gap:10px}
+nav.toc a:hover{color:var(--accent)}
+nav.toc .n{font:600 12px/1.5 var(--mono);color:var(--ink-3);flex:none}
+@media(max-width:620px){nav.toc ol{columns:1}}
 
 /* ---------- sections ---------- */
-section{margin:0 0 52px;scroll-margin-top:20px}
-h2{
-  font-size:13px;font-family:var(--mono);font-weight:700;letter-spacing:.12em;
-  text-transform:uppercase;color:var(--ink-3);margin:0 0 6px
+section{margin:0 0 54px;scroll-margin-top:16px}
+h2{font-size:24px;font-weight:650;letter-spacing:-.017em;margin:0 0 6px;line-height:1.25}
+h2 .n{
+  font:700 14px/1 var(--mono);color:var(--accent);
+  display:inline-block;min-width:1.9em;vertical-align:2px
 }
-h2 .n{color:var(--accent);margin-right:10px}
-.h2sub{font-size:24px;font-weight:650;letter-spacing:-.015em;margin:0 0 20px;line-height:1.25}
-h3{font-size:16px;font-weight:650;margin:28px 0 10px;letter-spacing:-.01em}
+.thesis{color:var(--ink-2);font-size:16px;margin:0 0 20px}
+h3{font-size:16px;font-weight:650;margin:26px 0 10px;letter-spacing:-.01em}
 p{margin:0 0 14px;color:var(--ink-2)}
 strong{color:var(--ink);font-weight:650}
-code{font:500 13.5px var(--mono);background:var(--accent-soft);color:var(--accent);padding:2px 6px;border-radius:4px}
-a{color:var(--accent)}
+.fine{font-size:13px;color:var(--ink-3);margin-top:-6px}
 
 /* ---------- tables ---------- */
-.tw{overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-table{border-collapse:collapse;width:100%;font-size:14.5px;min-width:480px}
-th,td{text-align:left;padding:11px 15px;border-bottom:1px solid var(--line);vertical-align:top}
-thead th{
-  font:600 11.5px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;
-  color:var(--ink-3);background:var(--bg);white-space:nowrap
+.tw{
+  overflow-x:auto;margin:0 0 18px;border:1px solid var(--line);
+  border-radius:10px;background:var(--panel)
 }
-tbody tr:last-child td{border-bottom:none}
-td.k{font-weight:600;color:var(--ink);white-space:nowrap;width:34%}
-td.mono,.mono{font-family:var(--mono);font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+caption{
+  text-align:left;padding:12px 16px 0;font:700 11px/1.4 var(--mono);
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)
+}
+th,td{text-align:left;padding:11px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+thead th{
+  font:700 11.5px/1.4 var(--mono);letter-spacing:.07em;text-transform:uppercase;
+  color:var(--ink-3);background:var(--sunk)
+}
+tbody tr:last-child td,tbody tr:last-child th{border-bottom:none}
+th[scope=row]{font-weight:650;color:var(--ink);width:32%}
+.mono{font-family:var(--mono);font-size:13.5px}
 .big{font-family:var(--mono);font-weight:700;font-size:16px;color:var(--accent)}
 
-/* ---------- callouts ---------- */
-.call{border-left:3px solid;border-radius:0 8px 8px 0;padding:14px 18px;margin:0 0 18px;font-size:14.5px}
-.call p{margin:0 0 8px;color:inherit}
-.call p:last-child{margin:0}
-.call .lbl{
-  display:block;font:700 11px/1 var(--mono);letter-spacing:.1em;
-  text-transform:uppercase;margin-bottom:8px
+/* level pill inside the traps table */
+.lvl{
+  display:inline-block;font:700 11px/1.3 var(--mono);letter-spacing:.08em;
+  padding:4px 8px;border-radius:4px;border:1px solid;white-space:nowrap
 }
-.call.info{border-color:var(--info);background:var(--info-soft)}
-.call.info .lbl{color:var(--info)}
-.call.warn{border-color:var(--warn);background:var(--warn-soft)}
-.call.warn .lbl{color:var(--warn)}
-.call.bad{border-color:var(--bad);background:var(--bad-soft)}
-.call.bad .lbl{color:var(--bad)}
-.call.ok{border-color:var(--ok);background:var(--ok-soft)}
-.call.ok .lbl{color:var(--ok)}
+.lvl.danger{color:var(--danger);border-color:var(--danger-line);background:var(--danger-soft)}
+.lvl.caution{color:var(--caution);border-color:var(--caution-line);background:var(--caution-soft)}
+
+/* ---------- callouts ---------- */
+.call{
+  border:1px solid;border-radius:9px;padding:15px 18px;margin:0 0 18px;
+  font-size:14.5px;max-width:none
+}
+.call>*{max-width:var(--measure)}
+.call p{margin:0 0 9px;color:var(--ink-2)}
+.call p:last-child{margin:0}
+.call .lbl{display:block;font:700 13.5px/1.5 var(--sans);letter-spacing:0;margin-bottom:9px}
+.call .lbl .tag{
+  display:inline-block;padding:3px 8px;margin-right:9px;border-radius:4px;
+  border:1px solid currentColor;font:700 11px/1.4 var(--mono);
+  letter-spacing:.08em;text-transform:uppercase;vertical-align:1px
+}
+.call.note{border-color:var(--note-line);background:var(--note-soft)}
+.call.note .lbl{color:var(--note)}
+.call.caution{border-color:var(--caution-line);background:var(--caution-soft)}
+.call.caution .lbl{color:var(--caution)}
+.call.danger{border-color:var(--danger-line);background:var(--danger-soft)}
+.call.danger .lbl{color:var(--danger)}
+.call.good{border-color:var(--good-line);background:var(--good-soft)}
+.call.good .lbl{color:var(--good)}
 
 /* ---------- figures ---------- */
 figure{margin:0 0 20px;padding:22px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
-figure svg{display:block;width:100%;height:auto;overflow:visible}
 figcaption{
-  margin-top:16px;padding-top:12px;border-top:1px solid var(--line);
-  font-size:13px;color:var(--ink-3)
+  margin-top:16px;padding-top:13px;border-top:1px solid var(--line);
+  font-size:13.5px;color:var(--ink-2);max-width:var(--measure)
 }
-.svg-l{font:600 12px var(--mono);fill:var(--ink-2)}
-.svg-s{font:500 11px var(--mono);fill:var(--ink-3)}
-.svg-v{font:700 13px var(--mono);fill:var(--ink)}
-.svg-t{font:700 11px var(--mono);letter-spacing:.08em}
 
 /* question grid */
-.qgrid{display:grid;grid-template-columns:repeat(13,1fr);gap:5px;margin:4px 0 0}
-.qgrid i{aspect-ratio:1;border-radius:3px;display:block}
+.qgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px}
+.qgrid i{aspect-ratio:1;border-radius:3px;display:block;print-color-adjust:exact;-webkit-print-color-adjust:exact}
 .qgrid i.s{background:var(--accent)}
-.qgrid i.u{background:var(--line-2);border:1px dashed var(--ink-3)}
-.legend{display:flex;flex-wrap:wrap;gap:18px;margin-top:16px;font-size:13px;color:var(--ink-2)}
-.legend span{display:flex;align-items:center;gap:7px}
-.sw{width:12px;height:12px;border-radius:3px;flex:none}
+.qgrid i.u{background:transparent;border:1.5px dashed var(--swatch-line)}
+.legend{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:16px;font-size:13.5px;color:var(--ink-2)}
+.legend span{display:flex;align-items:center;gap:8px}
+.sw{width:13px;height:13px;border-radius:3px;flex:none;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+.sw.s{background:var(--accent)}
+.sw.u{border:1.5px dashed var(--swatch-line)}
 
-/* two-col compare */
-.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 0 18px}
-@media(max-width:620px){.cols{grid-template-columns:1fr}.qgrid{grid-template-columns:repeat(10,1fr)}}
-.card{border:1px solid var(--line);border-radius:10px;padding:18px;background:var(--panel)}
-.card h4{
-  margin:0 0 4px;font:700 11px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--accent)
+/* score scale */
+.scale{margin:6px 0 0}
+.scale .track{display:flex;height:30px;border-radius:5px;overflow:hidden;border:1px solid var(--line-2)}
+.scale .fail,.scale .pass{
+  display:flex;align-items:center;justify-content:center;
+  font:700 11.5px/1 var(--mono);letter-spacing:.09em;print-color-adjust:exact;-webkit-print-color-adjust:exact
 }
-.card .cname{font-size:17px;font-weight:650;margin:0 0 14px;letter-spacing:-.01em}
-.card ul{margin:0;padding-left:18px;font-size:14px;color:var(--ink-2)}
-.card li{margin-bottom:7px}
+.scale .fail{width:68.9%;background:var(--danger-soft);color:var(--danger);border-right:2px solid var(--good)}
+.scale .pass{width:31.1%;background:var(--good-soft);color:var(--good)}
+.scale .marks{display:flex;justify-content:space-between;margin-top:8px;font:600 12px/1 var(--mono);color:var(--ink-3)}
+.scale .thresh{
+  margin-top:9px;font:700 12px/1 var(--mono);color:var(--good);
+  padding-left:calc(68.9% - 3.4em)
+}
+@media(max-width:560px){.scale .thresh{padding-left:0}}
+
+/* domain bars */
+.bars{display:flex;flex-direction:column;gap:14px}
+.bars .row{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:baseline}
+.bars .name{font-size:14px;font-weight:600;color:var(--ink)}
+.bars .pct{font:700 14px/1 var(--mono);color:var(--ink)}
+.bars .track{grid-column:1/-1;height:16px;border-radius:4px;background:var(--sunk);overflow:hidden}
+.bars .fill{height:100%;border-radius:4px;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+
+/* esl timeline */
+.tl{display:flex;flex-direction:column;gap:16px}
+.tl .row{display:grid;grid-template-columns:1fr auto;gap:5px 12px;align-items:baseline}
+.tl .name{font-size:14px;font-weight:600;color:var(--ink)}
+.tl .val{font:700 14px/1 var(--mono);color:var(--ink)}
+.tl .track{grid-column:1/-1;display:flex;height:18px;border-radius:4px;overflow:hidden;background:var(--sunk)}
+.tl .base,.tl .extra{print-color-adjust:exact;-webkit-print-color-adjust:exact;display:flex;align-items:center;padding-left:9px;font:700 11px/1 var(--mono)}
+.tl .base{background:var(--ink-3)}
+.tl .row.on .base{background:var(--accent)}
+.tl .extra{background:var(--good);color:var(--bg)}
+
+/* ---------- cards ---------- */
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0 0 18px}
+@media(max-width:640px){.cols{grid-template-columns:1fr}}
+.card{border:1px solid var(--line);border-radius:10px;padding:18px;background:var(--panel)}
+.card h3{margin:0 0 13px;font-size:16px;letter-spacing:-.01em}
+.card h3 .w{display:block;font:700 11px/1.6 var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.card ul{margin:0;padding-left:17px;font-size:14px;color:var(--ink-2)}
+.card li{margin-bottom:8px}
 .card li:last-child{margin-bottom:0}
 
-/* checklist */
+/* ---------- lists ---------- */
 ol.steps{counter-reset:s;list-style:none;padding:0;margin:0 0 18px}
-ol.steps li{
-  counter-increment:s;position:relative;padding:0 0 14px 40px;font-size:14.5px;color:var(--ink-2)
-}
+ol.steps li{counter-increment:s;position:relative;padding:0 0 14px 38px;font-size:14.5px;color:var(--ink-2)}
 ol.steps li::before{
-  content:counter(s);position:absolute;left:0;top:-1px;width:25px;height:25px;
-  border-radius:6px;background:var(--accent-soft);color:var(--accent);
-  font:700 12px/25px var(--mono);text-align:center;border:1px solid var(--accent)
+  content:counter(s);position:absolute;left:0;top:0;width:24px;height:24px;border-radius:5px;
+  background:var(--accent-soft);color:var(--accent);font:700 11.5px/22px var(--mono);
+  text-align:center;border:1px solid var(--accent-line)
 }
 ol.steps li b{color:var(--ink)}
 ul.tick{list-style:none;padding:0;margin:0 0 18px}
-ul.tick li{position:relative;padding:0 0 9px 26px;font-size:14.5px;color:var(--ink-2)}
-ul.tick li::before{content:"→";position:absolute;left:0;color:var(--accent);font-weight:700}
+ul.tick li{position:relative;padding:0 0 10px 24px;font-size:14.5px;color:var(--ink-2)}
+ul.tick li::before{content:"";position:absolute;left:2px;top:.62em;width:7px;height:7px;border-radius:50%;background:var(--accent)}
 
-footer{border-top:1px solid var(--line);padding-top:24px;font-size:13px;color:var(--ink-3)}
-footer ol{padding-left:20px;margin:10px 0 0}
-footer li{margin-bottom:5px}
-footer a{color:var(--ink-3);text-decoration:underline;text-underline-offset:2px}
+.top-link{display:inline-block;margin-top:6px;font:600 12px/1 var(--mono);color:var(--ink-3);text-decoration:none}
+.top-link:hover{color:var(--accent)}
+
+footer{border-top:1px solid var(--line);padding-top:26px;font-size:13.5px;color:var(--ink-2)}
+footer h2{font:700 11px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:0 0 12px}
+footer ol{padding-left:20px;margin:0 0 20px}
+footer li{margin-bottom:6px}
+footer .disc{font-size:12.5px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:16px;margin:0}
+
+/* ---------- mobile: stack tables ---------- */
+@media(max-width:640px){
+  .wrap{padding:0 18px 64px}
+  section{margin-bottom:44px}
+  .tw{border:none;border-radius:0;background:none;overflow:visible}
+  table,tbody,tr,td,th,caption{display:block;width:auto}
+  thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  caption{padding:0 0 10px}
+  tbody tr{
+    border:1px solid var(--line);border-radius:9px;background:var(--panel);
+    padding:4px 0;margin-bottom:10px
+  }
+  tbody tr:last-child{margin-bottom:0}
+  td,th[scope=row]{border-bottom:none;padding:7px 15px;width:auto}
+  th[scope=row]{padding-top:12px;font-size:15px}
+  /* label each cell in the 3-col tables */
+  td[data-l]::before{
+    content:attr(data-l);display:block;font:700 10px/1.5 var(--mono);
+    letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);margin-bottom:2px
+  }
+  td:last-child{padding-bottom:12px}
+}
+
+/* ---------- print ---------- */
+@media print{
+  :root,:root[data-theme="dark"]{
+    --bg:#fff; --panel:#fff; --sunk:#f2f2f2;
+    --ink:#000; --ink-2:#1a1a1a; --ink-3:#4a4a4a;
+    --line:#c9c9c9; --line-2:#9a9a9a; --swatch-line:#666;
+    --accent:#8a2f06; --accent-soft:#fbf1eb; --accent-line:#c9a084;
+    --d1:#8a3d07; --d2:#0d5c56; --d3:#332c9c; --d4:#7d0f3e; --on-domain:#fff;
+    --good:#0d5a2c; --good-soft:#eef6f0; --good-line:#a8c9b3;
+    --note:#123a94; --note-soft:#eef2fb; --note-line:#aec2ea;
+    --caution:#6d4200; --caution-soft:#fbf5e8; --caution-line:#d8c197;
+    --danger:#8c1616; --danger-soft:#fcf0ef; --danger-line:#dfb3af;
+  }
+  body{font-size:10.5pt;background:#fff}
+  .wrap{max-width:none;padding:0}
+  .skip,nav.toc,.top-link{display:none}
+  a{color:#000;text-decoration:underline}
+  footer a[href^="http"]::after{content:" (" attr(href) ")";font:400 8.5pt var(--mono);color:#444;word-break:break-all}
+  figure,.call,.card,.now,tbody tr,.tw{break-inside:avoid}
+  h2,h3{break-after:avoid}
+  section{break-inside:auto}
+  *{print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="wrap">
 
-<header class="top">
-  <div class="eyebrow">Day 00 · Orientation</div>
-  <h1>AWS Certified Solutions&nbsp;Architect — Associate</h1>
+<header class="top" id="top">
+  <h1>AWS Certified Solutions Architect — Associate</h1>
   <p class="sub">What the exam is, how it is scored, how to sit it from Kathmandu, and the rules that disqualify people before they answer a single question.</p>
   <div class="meta">
-    <span class="chip on">SAA-C03</span>
-    <span class="chip">Associate level</span>
+    <span class="chip on">Day 00 · Orientation</span>
+    <span class="chip">SAA-C03</span>
     <span class="chip">130 min</span>
     <span class="chip">65 questions</span>
     <span class="chip">USD 150</span>
@@ -177,309 +335,381 @@ footer a{color:var(--ink-3);text-decoration:underline;text-underline-offset:2px}
   </div>
 </header>
 
-<!-- ============ 1 ============ -->
-<section>
-  <h2><span class="n">01</span>What this certification is</h2>
-  <p class="h2sub">A design exam, not a hands-on lab.</p>
+<main id="main">
+
+<div class="now">
+  <h2>Do this week</h2>
+  <p class="lede">None of this is studying. All of it has to happen before a date can be booked, and two items have to happen in a specific order.</p>
+  <ol>
+    <li>Create the <b>AWS Certification Account</b>. <a href="#s07">→ 07</a></li>
+    <li>Compare the account name to your passport, character by character. Fix it now if it differs; this needs AWS support, not a settings toggle. <a href="#s09">→ 09</a></li>
+    <li>Request <b>ESL +30</b>. It must happen <b>before</b> you schedule. <a href="#s06">→ 06</a></li>
+    <li>Open the scheduling flow and check whether a Kathmandu centre delivers AWS. Do not book yet, just find out. <a href="#s07">→ 07</a></li>
+    <li>Confirm your card takes international USD charges. <a href="#s02">→ 02</a></li>
+    <li>Read the official exam guide PDF once, end to end. <a href="#sources">→ sources</a></li>
+  </ol>
+</div>
+
+<nav class="toc" aria-labelledby="toc-h">
+  <h2 id="toc-h">On this page</h2>
+  <ol>
+    <li><a href="#s01"><span class="n">01</span> What this certification is</a></li>
+    <li><a href="#s02"><span class="n">02</span> Exam vitals</a></li>
+    <li><a href="#s03"><span class="n">03</span> How scoring actually works</a></li>
+    <li><a href="#s04"><span class="n">04</span> What is tested</a></li>
+    <li><a href="#s05"><span class="n">05</span> Two ways to sit the exam</a></li>
+    <li><a href="#s06"><span class="n">06</span> ESL +30</a></li>
+    <li><a href="#s07"><span class="n">07</span> Booking from Kathmandu</a></li>
+    <li><a href="#s08"><span class="n">08</span> Money and policy</a></li>
+    <li><a href="#s09"><span class="n">09</span> Traps</a></li>
+    <li><a href="#sources"><span class="n">—</span> Sources</a></li>
+  </ol>
+</nav>
+
+<!-- 01 -->
+<section id="s01" aria-labelledby="h01">
+  <h2 id="h01"><span class="n">01</span> What this certification is</h2>
+  <p class="thesis">A design exam, not a hands-on lab.</p>
   <ul class="tick">
     <li>Validates that you can <strong>design</strong> solutions on AWS against the Well-Architected Framework.</li>
     <li>You are given a scenario and pick the best architecture. No console work, no CLI, no coding.</li>
     <li>AWS assumes <strong>~1 year hands-on</strong> designing on AWS. That is a recommendation, not a gate. Nothing blocks you from booking today.</li>
-    <li>No prerequisite certification. Cloud Practitioner is optional, not required.</li>
+    <li>No prerequisite certification. Cloud Practitioner is optional.</li>
   </ul>
-  <div class="call info">
-    <span class="lbl">Exam code matters</span>
-    <p><strong>SAA-C03</strong> is the current and only live version. Ignore blogs advertising an "SAA-C04" — AWS publishes no such exam guide, and that URL returns 404. Verified against AWS docs, September 2026.</p>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Exam code matters</span>
+    <p><strong>SAA-C03</strong> is the current and only live version. Ignore blogs advertising an "SAA-C04": AWS publishes no such exam guide, and that URL returns 404. Verified against AWS docs, September 2026.</p>
   </div>
 </section>
 
-<!-- ============ 2 ============ -->
-<section>
-  <h2><span class="n">02</span>Exam vitals</h2>
-  <p class="h2sub">The numbers to memorise.</p>
-  <div class="tw"><table>
-    <tbody>
-      <tr><td class="k">Exam code</td><td class="mono">SAA-C03</td></tr>
-      <tr><td class="k">Level</td><td>Associate</td></tr>
-      <tr><td class="k">Cost</td><td><span class="big">USD 150</span> + local tax where applicable</td></tr>
-      <tr><td class="k">Duration</td><td><span class="big">130 minutes</span></td></tr>
-      <tr><td class="k">Questions</td><td><span class="big">65</span> &nbsp;·&nbsp; 50 scored + 15 unscored</td></tr>
-      <tr><td class="k">Question types</td><td>Multiple choice (1 of 4) · Multiple response (2+ of 5+)</td></tr>
-      <tr><td class="k">Score range</td><td class="mono">100 – 1000</td></tr>
-      <tr><td class="k">Passing score</td><td><span class="big">720</span> &nbsp;·&nbsp; compensatory (overall only)</td></tr>
-      <tr><td class="k">Result</td><td>Pass / Fail — shown on screen at the end</td></tr>
-      <tr><td class="k">Validity</td><td><span class="big">3 years</span></td></tr>
-      <tr><td class="k">Delivery</td><td>Pearson VUE test center &nbsp;·&nbsp; OnVUE online proctored</td></tr>
-      <tr><td class="k">Pace needed</td><td class="mono">~2 min per question</td></tr>
-    </tbody>
-  </table></div>
-  <div class="call warn">
-    <span class="lbl">Budget note — Nepal</span>
-    <p>The fee is charged in <strong>USD</strong>. At recent rates USD 150 lands near <strong>NPR 20,000–21,500</strong> — treat as approximate, the rate moves. Check before booking that your card is enabled for international transactions, and expect an FX markup from your bank on top.</p>
+<!-- 02 -->
+<section id="s02" aria-labelledby="h02">
+  <h2 id="h02"><span class="n">02</span> Exam vitals</h2>
+  <p class="thesis">The numbers to memorise.</p>
+  <div class="tw">
+    <table>
+      <caption>Exam specification</caption>
+      <tbody>
+        <tr><th scope="row">Exam code</th><td class="mono">SAA-C03</td></tr>
+        <tr><th scope="row">Level</th><td>Associate</td></tr>
+        <tr><th scope="row">Cost</th><td><span class="big">USD 150</span> + local tax where applicable</td></tr>
+        <tr><th scope="row">Duration</th><td><span class="big">130 minutes</span></td></tr>
+        <tr><th scope="row">Questions</th><td><span class="big">65</span> (50 scored, 15 unscored)</td></tr>
+        <tr><th scope="row">Question types</th><td>Multiple choice (1 of 4) · Multiple response (2+ of 5+)</td></tr>
+        <tr><th scope="row">Score range</th><td class="mono">100 – 1000</td></tr>
+        <tr><th scope="row">Passing score</th><td><span class="big">720</span>, compensatory (overall only)</td></tr>
+        <tr><th scope="row">Result</th><td>Pass / Fail, shown on screen at the end</td></tr>
+        <tr><th scope="row">Validity</th><td><span class="big">3 years</span></td></tr>
+        <tr><th scope="row">Delivery</th><td>Pearson VUE test centre · OnVUE online proctored</td></tr>
+        <tr><th scope="row">Pace needed</th><td class="mono">~2 min per question</td></tr>
+      </tbody>
+    </table>
   </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Budget in Nepal</span>
+    <p>The fee is charged in <strong>USD</strong>. At recent rates USD 150 lands near <strong>NPR 20,000–21,500</strong>, approximate; the rate moves. Check before booking that your card is enabled for international transactions, and expect an FX markup from your bank on top.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 3 ============ -->
-<section>
-  <h2><span class="n">03</span>How scoring actually works</h2>
-  <p class="h2sub">Three things people get wrong.</p>
+<!-- 03 -->
+<section id="s03" aria-labelledby="h03">
+  <h2 id="h03"><span class="n">03</span> How scoring actually works</h2>
+  <p class="thesis">Three things people get wrong.</p>
 
   <figure>
-    <div class="qgrid">
-      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
-      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
-      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
-      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="u"></i><i class="u"></i>
-      <i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i>
+    <div class="qgrid" role="img" aria-label="Grid of 65 squares: 50 filled, representing scored questions, and 15 outlined, representing unscored trial questions.">
+      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
+      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
+      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
+      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
+      <i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i><i class="s"></i>
+      <i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i>
+      <i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i><i class="u"></i>
     </div>
     <div class="legend">
-      <span><i class="sw" style="background:var(--accent)"></i> 50 scored — these decide pass/fail</span>
-      <span><i class="sw" style="background:var(--line-2);border:1px dashed var(--ink-3)"></i> 15 unscored — AWS trialling future questions</span>
+      <span><i class="sw s"></i> 50 scored: these decide pass/fail</span>
+      <span><i class="sw u"></i> 15 unscored: AWS trialling future questions</span>
     </div>
-    <figcaption>You answer 65. Only 50 count. The 15 unscored ones are <strong>not marked</strong> anywhere on screen — so a question that feels bizarre may simply be a trial question. Never let one rattle you.</figcaption>
+    <figcaption>You answer 65. Only 50 count. The unscored ones are <strong>not marked</strong> anywhere on screen, so a question that feels bizarre may simply be a trial question. Never let one rattle you.</figcaption>
   </figure>
 
   <figure>
-    <svg viewBox="0 0 640 118" role="img" aria-label="Score scale from 100 to 1000 with passing mark at 720">
-      <rect x="20" y="34" width="413" height="26" rx="4" fill="var(--bad)" opacity=".22"/>
-      <rect x="433" y="34" width="187" height="26" rx="4" fill="var(--ok)" opacity=".28"/>
-      <line x1="433" y1="20" x2="433" y2="74" stroke="var(--ok)" stroke-width="2.5"/>
-      <text x="433" y="14" text-anchor="middle" class="svg-t" fill="var(--ok)">PASS 720</text>
-      <text x="20"  y="88" class="svg-s">100</text>
-      <text x="620" y="88" text-anchor="end" class="svg-s">1000</text>
-      <text x="226" y="52" text-anchor="middle" class="svg-t" fill="var(--bad)">FAIL</text>
-      <text x="527" y="52" text-anchor="middle" class="svg-t" fill="var(--ok)">PASS</text>
-      <text x="20" y="108" class="svg-s">scaled score — not a raw percentage</text>
-    </svg>
-    <figcaption><strong>720 is not 72%.</strong> It is a scaled score. AWS equates scores across exam forms of differing difficulty, so the raw number of correct answers needed shifts slightly form to form.</figcaption>
+    <div class="scale" role="img" aria-label="Score scale from 100 to 1000. Scores below 720 fail; 720 and above pass.">
+      <div class="track"><div class="fail">FAIL</div><div class="pass">PASS</div></div>
+      <div class="marks"><span>100</span><span>1000</span></div>
+      <div class="thresh">↑ 720</div>
+    </div>
+    <figcaption><strong>720 is not 72%.</strong> It is a scaled score on a 100–1000 range. AWS equates scores across exam forms of differing difficulty, so the raw number of correct answers needed shifts slightly form to form.</figcaption>
   </figure>
 
-  <div class="call ok">
-    <span class="lbl">Compensatory scoring</span>
-    <p>You <strong>do not</strong> need to pass each domain. Only the overall score matters. A weak domain can be carried by a strong one. The per-domain feedback on your score report is directional only — AWS explicitly warns against over-reading it.</p>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Compensatory scoring</span>
+    <p>You <strong>do not</strong> need to pass each domain. Only the overall score matters. A weak domain can be carried by a strong one. The per-domain feedback on your score report is directional only; AWS explicitly warns against over-reading it.</p>
   </div>
-  <div class="call bad">
-    <span class="lbl">No penalty for guessing</span>
-    <p>Unanswered questions are scored as wrong. A guess is strictly better than a blank. <strong>Never leave anything empty.</strong> Flag and move on, but always put an answer down first.</p>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Guessing is free</span>
+    <p>There is no penalty for a wrong answer, and unanswered questions are scored as wrong anyway. A guess is strictly better than a blank. <strong>Never leave anything empty</strong> — flag it and move on, but put an answer down first.</p>
   </div>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 4 ============ -->
-<section>
-  <h2><span class="n">04</span>What is tested — domain weightage</h2>
-  <p class="h2sub">Security is the biggest block. Study time should follow these bars.</p>
+<!-- 04 -->
+<section id="s04" aria-labelledby="h04">
+  <h2 id="h04"><span class="n">04</span> What is tested</h2>
+  <p class="thesis">Study time should follow these bars.</p>
 
   <figure>
-    <svg viewBox="0 0 640 232" role="img" aria-label="Bar chart of the four exam domains by weight">
-      <!-- D1 -->
-      <text x="0" y="22" class="svg-l">Domain 1 · Design Secure Architectures</text>
-      <rect x="0" y="30" width="600" height="24" rx="4" fill="var(--d1)"/>
-      <text x="590" y="47" text-anchor="end" class="svg-t" fill="#fff">30%</text>
-      <!-- D2 -->
-      <text x="0" y="84" class="svg-l">Domain 2 · Design Resilient Architectures</text>
-      <rect x="0" y="92" width="520" height="24" rx="4" fill="var(--d2)"/>
-      <text x="510" y="109" text-anchor="end" class="svg-t" fill="#fff">26%</text>
-      <!-- D3 -->
-      <text x="0" y="146" class="svg-l">Domain 3 · Design High-Performing Architectures</text>
-      <rect x="0" y="154" width="480" height="24" rx="4" fill="var(--d3)"/>
-      <text x="470" y="171" text-anchor="end" class="svg-t" fill="#fff">24%</text>
-      <!-- D4 -->
-      <text x="0" y="208" class="svg-l">Domain 4 · Design Cost-Optimized Architectures</text>
-      <rect x="0" y="216" width="400" height="24" rx="4" fill="var(--d4)"/>
-      <text x="390" y="233" text-anchor="end" class="svg-t" fill="#fff">20%</text>
-    </svg>
-    <figcaption>Bars are drawn to scale against the 30% maximum.</figcaption>
+    <div class="bars">
+      <div class="row">
+        <span class="name">Domain 1 · Design Secure Architectures</span><span class="pct">30%</span>
+        <div class="track"><div class="fill" style="width:100%;background:var(--d1)"></div></div>
+      </div>
+      <div class="row">
+        <span class="name">Domain 2 · Design Resilient Architectures</span><span class="pct">26%</span>
+        <div class="track"><div class="fill" style="width:86.7%;background:var(--d2)"></div></div>
+      </div>
+      <div class="row">
+        <span class="name">Domain 3 · Design High-Performing Architectures</span><span class="pct">24%</span>
+        <div class="track"><div class="fill" style="width:80%;background:var(--d3)"></div></div>
+      </div>
+      <div class="row">
+        <span class="name">Domain 4 · Design Cost-Optimized Architectures</span><span class="pct">20%</span>
+        <div class="track"><div class="fill" style="width:66.7%;background:var(--d4)"></div></div>
+      </div>
+    </div>
+    <figcaption><strong>Security and resilience together are 56% of the exam.</strong> If study time is short, that is where it goes. Bars are scaled against the 30% maximum.</figcaption>
   </figure>
 
-  <div class="tw"><table>
-    <thead><tr><th>Domain</th><th>Weight</th><th>Approx. scored Qs</th><th>Core ground</th></tr></thead>
-    <tbody>
-      <tr><td class="k">1 · Secure</td><td class="mono">30%</td><td class="mono">~15</td><td>IAM, roles vs users, policies, security groups vs NACLs, KMS, WAF, Shield, secrets</td></tr>
-      <tr><td class="k">2 · Resilient</td><td class="mono">26%</td><td class="mono">~13</td><td>Multi-AZ, failover, decoupling (SQS/SNS), backup &amp; restore, RTO/RPO</td></tr>
-      <tr><td class="k">3 · High-Performing</td><td class="mono">24%</td><td class="mono">~12</td><td>Storage &amp; DB selection, caching, CloudFront, autoscaling, right-sizing</td></tr>
-      <tr><td class="k">4 · Cost-Optimized</td><td class="mono">20%</td><td class="mono">~10</td><td>Instance purchase models, S3 tiers &amp; lifecycle, data-transfer cost, Cost Explorer</td></tr>
-    </tbody>
-  </table></div>
-  <p class="mono" style="font-size:13px;color:var(--ink-3)">Question counts are the weightings applied to the 50 scored questions — indicative, not guaranteed.</p>
+  <div class="tw">
+    <table>
+      <caption>Domains in detail</caption>
+      <thead><tr><th scope="col">Domain</th><th scope="col">Weight</th><th scope="col">Scored Qs</th><th scope="col">Core ground</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">1 · Secure</th><td data-l="Weight" class="mono">30%</td><td data-l="Scored Qs" class="mono">~15</td><td data-l="Core ground">IAM, roles vs users, policies, security groups vs NACLs, KMS, WAF, Shield, secrets</td></tr>
+        <tr><th scope="row">2 · Resilient</th><td data-l="Weight" class="mono">26%</td><td data-l="Scored Qs" class="mono">~13</td><td data-l="Core ground">Multi-AZ, failover, decoupling (SQS/SNS), backup and restore, RTO/RPO</td></tr>
+        <tr><th scope="row">3 · High-Performing</th><td data-l="Weight" class="mono">24%</td><td data-l="Scored Qs" class="mono">~12</td><td data-l="Core ground">Storage and DB selection, caching, CloudFront, autoscaling, right-sizing</td></tr>
+        <tr><th scope="row">4 · Cost-Optimized</th><td data-l="Weight" class="mono">20%</td><td data-l="Scored Qs" class="mono">~10</td><td data-l="Core ground">Instance purchase models, S3 tiers and lifecycle, data-transfer cost, Cost Explorer</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">Question counts are the weightings applied to the 50 scored questions; indicative, not guaranteed.</p>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 5 ============ -->
-<section>
-  <h2><span class="n">05</span>Two ways to sit the exam</h2>
-  <p class="h2sub">Same exam, same price, very different failure modes.</p>
+<!-- 05 -->
+<section id="s05" aria-labelledby="h05">
+  <h2 id="h05"><span class="n">05</span> Two ways to sit the exam</h2>
+  <p class="thesis">Same exam, same price, very different failure modes. For most candidates in Nepal, online proctored is the realistic default, but only if your power and connection hold for 130 minutes uninterrupted.</p>
 
   <div class="cols">
     <div class="card">
-      <h4>Mode A</h4>
-      <p class="cname">Pearson VUE test center</p>
+      <h3><span class="w">In person</span> Pearson VUE test centre</h3>
       <ul>
         <li><b>ID:</b> two primary IDs, <em>or</em> one primary + one secondary</li>
         <li><b>Arrive:</b> 15–30 min early</li>
         <li><b>Belongings:</b> stored by staff before you enter the room</li>
-        <li><b>Breaks:</b> unscheduled breaks allowed, <b>timer keeps running</b>; cannot leave the building</li>
+        <li><b>Breaks:</b> unscheduled breaks allowed, <b>the timer keeps running</b>; you cannot leave the building</li>
         <li><b>Kit:</b> their machine, their network</li>
       </ul>
     </div>
     <div class="card">
-      <h4>Mode B</h4>
-      <p class="cname">OnVUE online proctored</p>
+      <h3><span class="w">At home</span> OnVUE online proctored</h3>
       <ul>
         <li><b>ID:</b> one primary, government-issued, photo + signature in Roman characters</li>
-        <li><b>Check-in:</b> opens 30 min early; <b>&gt;15 min late = fee forfeited</b></li>
+        <li><b>Check-in:</b> opens 30 min early; <b>more than 15 min late forfeits the fee</b></li>
         <li><b>Room:</b> 360° webcam scan, private space, nobody may enter</li>
-        <li><b>Breaks:</b> none — leaving camera view ends the exam</li>
+        <li><b>Breaks:</b> none; leaving camera view ends the exam</li>
         <li><b>Kit:</b> your machine, your internet, your risk</li>
       </ul>
     </div>
   </div>
 
-  <div class="tw"><table>
-    <thead><tr><th>&nbsp;</th><th>Test center</th><th>OnVUE (online)</th></tr></thead>
-    <tbody>
-      <tr><td class="k">Scratch work</td><td>Provided by the center</td><td>Built-in digital whiteboard only — <strong>no handwritten notes</strong></td></tr>
-      <tr><td class="k">Leaving your seat</td><td>Allowed, clock runs</td><td>Terminates the exam, score invalidated</td></tr>
-      <tr><td class="k">Someone walks in</td><td>N/A</td><td>Exam stopped</td></tr>
-      <tr><td class="k">Internet failure</td><td>Not your problem</td><td>Your problem</td></tr>
-      <tr><td class="k">Proctor language</td><td>On-site staff</td><td>English, Japanese, Spanish (LatAm), Mandarin</td></tr>
-      <tr><td class="k">Best when</td><td>Home is noisy, power/net unreliable, you want zero environment risk</td><td>No convenient center, you want flexible slots</td></tr>
-    </tbody>
-  </table></div>
-
-  <div class="call bad">
-    <span class="lbl">Load-shedding &amp; bandwidth</span>
-    <p>OnVUE holds a live webcam + screen-share for 130+ minutes. If your power or link is not dependable for that full window uninterrupted, take the test center. A drop mid-exam is your loss, not theirs.</p>
+  <div class="tw">
+    <table>
+      <caption>Where they differ</caption>
+      <thead><tr><th scope="col">Factor</th><th scope="col">Test centre</th><th scope="col">OnVUE online</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Scratch work</th><td data-l="Test centre">Provided by the centre</td><td data-l="OnVUE online">Built-in digital whiteboard only. <strong>No handwritten notes.</strong></td></tr>
+        <tr><th scope="row">Leaving your seat</th><td data-l="Test centre">Allowed, clock runs</td><td data-l="OnVUE online">Terminates the exam, score invalidated</td></tr>
+        <tr><th scope="row">Someone walks in</th><td data-l="Test centre">Not applicable</td><td data-l="OnVUE online">Exam stopped</td></tr>
+        <tr><th scope="row">Internet failure</th><td data-l="Test centre">Not your problem</td><td data-l="OnVUE online">Your problem</td></tr>
+        <tr><th scope="row">Proctor language</th><td data-l="Test centre">On-site staff</td><td data-l="OnVUE online">English, Japanese, Spanish (LatAm), Mandarin</td></tr>
+      </tbody>
+    </table>
   </div>
+
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Load-shedding and bandwidth</span>
+    <p>OnVUE holds a live webcam and screen-share for 130 minutes or more. If your power or link is not dependable for that whole window uninterrupted, take the test centre. A drop mid-exam is your loss, not theirs.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 6 ============ -->
-<section>
-  <h2><span class="n">06</span>ESL +30 — the free extra 30 minutes</h2>
-  <p class="h2sub">English is not your first language. Claim this. It costs nothing.</p>
+<!-- 06 -->
+<section id="s06" aria-labelledby="h06">
+  <h2 id="h06"><span class="n">06</span> ESL +30, the free extra 30 minutes</h2>
+  <p class="thesis">English is not your first language. Claim this. It costs nothing.</p>
 
   <figure>
-    <svg viewBox="0 0 640 92" role="img" aria-label="Standard 130 minutes versus 160 minutes with ESL accommodation">
-      <text x="0" y="16" class="svg-l">Standard</text>
-      <rect x="0" y="24" width="450" height="20" rx="4" fill="var(--ink-3)" opacity=".45"/>
-      <text x="462" y="39" class="svg-v">130 min</text>
-      <text x="0" y="70" class="svg-l">With ESL +30</text>
-      <rect x="0" y="78" width="450" height="20" rx="4" fill="var(--accent)"/>
-      <rect x="450" y="78" width="104" height="20" rx="4" fill="var(--ok)"/>
-      <text x="566" y="93" class="svg-v">160 min</text>
-    </svg>
-    <figcaption>Same 65 questions, 30 more minutes. Pace goes from ~2:00 to ~2:27 per question.</figcaption>
+    <div class="tl" role="img" aria-label="Standard exam time is 130 minutes. With the ESL plus 30 accommodation it is 160 minutes.">
+      <div class="row">
+        <span class="name">Standard</span><span class="val">130 min</span>
+        <div class="track"><div class="base" style="width:81.25%"></div></div>
+      </div>
+      <div class="row on">
+        <span class="name">With ESL +30</span><span class="val">160 min</span>
+        <div class="track"><div class="base" style="width:81.25%"></div><div class="extra" style="width:18.75%">+30</div></div>
+      </div>
+    </div>
+    <figcaption>Same 65 questions, 30 more minutes. Pace goes from about 2:00 to about 2:27 per question.</figcaption>
   </figure>
 
   <ol class="steps">
-    <li>Create / sign in to your <b>AWS Certification Account</b>.</li>
+    <li>Create or sign in to your <b>AWS Certification Account</b>.</li>
     <li>Go to <b>Request Exam Accommodations</b> → <b>Request Accommodation</b>.</li>
     <li>Accommodation type → <b>ESL +30 MINUTES</b> → <b>Create</b>.</li>
     <li>Approved <b>automatically</b>. No documentation, no proof of nationality, no waiting.</li>
     <li>Now schedule the exam. The extension is applied at booking.</li>
   </ol>
 
-  <div class="call warn">
-    <span class="lbl">Order of operations — this is the trap</span>
-    <p>You must request it <strong>before</strong> you schedule. If an exam is already booked you cannot add it — you have to <strong>cancel the booking, request the accommodation, then rebook</strong>. Do this on day one, before you even think about a date.</p>
+  <div class="call danger">
+    <span class="lbl"><span class="tag">Danger</span> Order of operations</span>
+    <p>You must request this <strong>before</strong> you schedule. If an exam is already booked you cannot add it; you have to <strong>cancel the booking, request the accommodation, then rebook</strong>, and cancelling inside 24 hours forfeits the fee. Do this on day one, before you even think about a date.</p>
   </div>
-  <div class="call ok">
-    <span class="lbl">One-time</span>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> One-time</span>
     <p>It saves to your account permanently and auto-applies to every future AWS exam, with every delivery provider. Request once, benefit forever.</p>
   </div>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 7 ============ -->
-<section>
-  <h2><span class="n">07</span>Booking from Kathmandu</h2>
-  <p class="h2sub">Always book through AWS, never directly on Pearson VUE.</p>
+<!-- 07 -->
+<section id="s07" aria-labelledby="h07">
+  <h2 id="h07"><span class="n">07</span> Booking from Kathmandu</h2>
+  <p class="thesis">Always book through AWS, never directly on Pearson VUE.</p>
 
   <ol class="steps">
     <li>Create an <b>AWS Certification Account</b> (AWS Builder ID).</li>
-    <li><b>Fix your name first.</b> Account name must match your passport / citizenship ID <em>exactly</em>. See the trap below.</li>
-    <li>Request <b>ESL +30</b> (section 06) — before scheduling.</li>
+    <li><b>Fix your name first.</b> The account name must match your passport or citizenship ID exactly. See <a href="#s09">section 09</a>.</li>
+    <li>Request <b>ESL +30</b>, see <a href="#s06">section 06</a>. Before scheduling, not after.</li>
     <li><b>Schedule New Exam</b> → find SAA-C03 → <b>Schedule with Pearson VUE</b>.</li>
-    <li>Choose <b>test center</b> (search Kathmandu) or <b>online proctored</b>, then date and slot.</li>
-    <li>Pay in USD. Keep the confirmation email — it carries the reschedule link.</li>
+    <li>Choose <b>test centre</b> (search Kathmandu) or <b>online proctored</b>, then date and slot.</li>
+    <li>Pay in USD. Keep the confirmation email; it carries the reschedule link.</li>
   </ol>
 
-  <div class="call warn">
-    <span class="lbl">Finding a Kathmandu center — do this yourself, live</span>
-    <p>Do not trust any center list found by searching, this note included. Third-party pages are stale and often wrong: one widely-cited "Kathmandu Pearson VUE center" page resolves to an address in <strong>Kolkata</strong>, and another center's site is dead.</p>
-    <p>Two things that actually matter:</p>
-    <p>① Pearson VUE runs <strong>separate programs</strong>. Many Nepali centers are <strong>PTE Academic</strong> (English testing) only. AWS needs a <strong>Pearson Professional / IT certification</strong> center. A center being "Pearson VUE authorised" does <em>not</em> mean it delivers AWS.</p>
-    <p>② The only authoritative list is the one shown <strong>inside the AWS scheduling flow</strong> after you pick Pearson VUE — it is filtered to centers that actually deliver AWS exams. Search "Kathmandu" there and take whatever it returns.</p>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Finding a centre: do this yourself, live</span>
+    <p>Do not trust any centre list found by searching, <strong>this note included</strong>. Third-party pages are stale and often wrong: one widely-cited "Kathmandu Pearson VUE centre" page resolves to an address in <strong>Kolkata</strong>, and another centre's site is dead.</p>
+    <p>Two things actually matter. First, Pearson VUE runs <strong>separate programs</strong>: many Nepali centres are <strong>PTE Academic</strong> (English testing) only, while AWS needs a <strong>Pearson Professional</strong> centre. A centre being "Pearson VUE authorised" does <em>not</em> mean it delivers AWS.</p>
+    <p>Second, the only authoritative list is the one shown <strong>inside the AWS scheduling flow</strong> after you pick Pearson VUE. It is filtered to centres that actually deliver AWS exams. Search "Kathmandu" there and take whatever it returns.</p>
   </div>
-  <div class="call info">
-    <span class="lbl">If nothing appears in Kathmandu</span>
-    <p>Fall back to OnVUE online proctored — same exam, same fee, no travel. That is the realistic default for most candidates in Nepal.</p>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> If nothing appears in Kathmandu</span>
+    <p>Fall back to OnVUE online proctored: same exam, same fee, no travel.</p>
   </div>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 8 ============ -->
-<section>
-  <h2><span class="n">08</span>Money, rescheduling, retakes</h2>
-  <p class="h2sub">The policy clock.</p>
-  <div class="tw"><table>
-    <thead><tr><th>Situation</th><th>Rule</th></tr></thead>
-    <tbody>
-      <tr><td class="k">Reschedule</td><td>Up to <strong>24 hours</strong> before the slot. Maximum <strong>2 reschedules</strong> per appointment.</td></tr>
-      <tr><td class="k">Cancel</td><td>At least <strong>24 hours</strong> before, or you forfeit the full fee.</td></tr>
-      <tr><td class="k">No-show</td><td>Fee forfeited.</td></tr>
-      <tr><td class="k">Fail</td><td>Wait <strong>14 calendar days</strong> before retaking. No cap on attempts.</td></tr>
-      <tr><td class="k">Cost of a retake</td><td><strong>Full USD 150 again</strong>, every attempt.</td></tr>
-      <tr><td class="k">Pass</td><td>Cannot retake the same exam for <strong>2 years</strong>.</td></tr>
-      <tr><td class="k">Certification life</td><td><strong>3 years</strong> from the date earned.</td></tr>
-      <tr><td class="k">Recertify</td><td>Retake the same exam, pass a higher exam in the same track, or complete a Skill Builder recertification assessment where offered.</td></tr>
-    </tbody>
-  </table></div>
-  <div class="call info">
-    <span class="lbl">Languages</span>
-    <p>SAA-C03 is offered in English, French (France), Italian, Japanese, Korean, Portuguese (Brazil), Spanish (LatAm), Spanish (Spain), Simplified Chinese, Traditional Chinese. <strong>Nepali is not offered</strong> — you will sit it in English, which is exactly why ESL +30 exists. A localised exam also lets you toggle to English mid-question; irrelevant here since English is the only option for you.</p>
-    <p style="margin-top:8px"><em>Italian retires after 31 December 2026.</em></p>
+<!-- 08 -->
+<section id="s08" aria-labelledby="h08">
+  <h2 id="h08"><span class="n">08</span> Money and policy</h2>
+  <p class="thesis">The policy clock.</p>
+  <div class="tw">
+    <table>
+      <caption>Scheduling and retake policy</caption>
+      <thead><tr><th scope="col">Situation</th><th scope="col">Rule</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Reschedule</th><td>Up to <strong>24 hours</strong> before the slot. Maximum <strong>2 reschedules</strong> per appointment.</td></tr>
+        <tr><th scope="row">Cancel</th><td>At least <strong>24 hours</strong> before, or you forfeit the full fee.</td></tr>
+        <tr><th scope="row">No-show</th><td>Fee forfeited.</td></tr>
+        <tr><th scope="row">Fail</th><td>Wait <strong>14 calendar days</strong> before retaking. No cap on attempts.</td></tr>
+        <tr><th scope="row">Cost of a retake</th><td><strong>Full USD 150 again</strong>, every attempt.</td></tr>
+        <tr><th scope="row">Pass</th><td>Cannot retake the same exam for <strong>2 years</strong>.</td></tr>
+        <tr><th scope="row">Certification life</th><td><strong>3 years</strong> from the date earned.</td></tr>
+        <tr><th scope="row">Recertify</th><td>Retake the same exam, pass a higher exam in the same track, or complete a Skill Builder recertification assessment where offered.</td></tr>
+      </tbody>
+    </table>
   </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Languages</span>
+    <p>SAA-C03 is offered in English, French (France), Italian, Japanese, Korean, Portuguese (Brazil), Spanish (LatAm), Spanish (Spain), Simplified Chinese and Traditional Chinese. <strong>Nepali is not offered</strong>, so you will sit it in English, which is exactly why ESL +30 exists.</p>
+    <p><em>Italian retires after 31 December 2026.</em></p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 9 ============ -->
-<section>
-  <h2><span class="n">09</span>Traps that fail people before question 1</h2>
-  <p class="h2sub">Every one of these is admin, not knowledge.</p>
-  <div class="tw"><table>
-    <thead><tr><th>Trap</th><th>Consequence</th><th>Prevention</th></tr></thead>
-    <tbody>
-      <tr><td class="k">Name mismatch</td><td>Turned away at the door. Fee gone.</td><td>AWS account name must equal ID name <em>character for character</em>. Fix weeks ahead — it needs AWS support, not a settings toggle.</td></tr>
-      <tr><td class="k">ESL requested too late</td><td>Cannot add it; must cancel and rebook.</td><td>Request before scheduling. Day one.</td></tr>
-      <tr><td class="k">Expired ID</td><td>Entry refused.</td><td>Check the expiry date now, not the night before.</td></tr>
-      <tr><td class="k">One ID at a test center</td><td>Entry refused.</td><td>Centers want two. Carry passport + licence/citizenship.</td></tr>
-      <tr><td class="k">Late for OnVUE</td><td>&gt;15 min late = fee forfeited.</td><td>Start check-in at the 30-minute mark, not at start time.</td></tr>
-      <tr><td class="k">Handwritten notes on OnVUE</td><td>Exam terminated.</td><td>Clear the desk completely. Use the built-in whiteboard.</td></tr>
-      <tr><td class="k">Blank answers</td><td>Scored wrong.</td><td>Guess on everything. Zero downside.</td></tr>
-    </tbody>
-  </table></div>
+<!-- 09 -->
+<section id="s09" aria-labelledby="h09">
+  <h2 id="h09"><span class="n">09</span> Traps that fail people before question 1</h2>
+  <p class="thesis">Every one of these is admin, not knowledge, which means every one is avoidable in a single afternoon. That is what <a href="#top">Do this week</a> is for.</p>
+  <div class="tw">
+    <table>
+      <caption>Failure modes and prevention</caption>
+      <thead><tr><th scope="col">Trap</th><th scope="col">Level</th><th scope="col">Consequence</th><th scope="col">Prevention</th></tr></thead>
+      <tbody>
+        <tr>
+          <th scope="row">Name mismatch</th>
+          <td data-l="Level"><span class="lvl danger">Danger</span></td>
+          <td data-l="Consequence">Turned away at the door. Fee gone.</td>
+          <td data-l="Prevention">Account name must equal ID name character for character. Fix weeks ahead; it needs AWS support, not a settings toggle.</td>
+        </tr>
+        <tr>
+          <th scope="row">ESL requested too late</th>
+          <td data-l="Level"><span class="lvl danger">Danger</span></td>
+          <td data-l="Consequence">Cannot add it; must cancel and rebook, forfeiting the fee if inside 24 hours.</td>
+          <td data-l="Prevention">Request before scheduling. Day one.</td>
+        </tr>
+        <tr>
+          <th scope="row">Expired ID</th>
+          <td data-l="Level"><span class="lvl danger">Danger</span></td>
+          <td data-l="Consequence">Entry refused. Fee gone.</td>
+          <td data-l="Prevention">Check the expiry date now, not the night before.</td>
+        </tr>
+        <tr>
+          <th scope="row">One ID at a test centre</th>
+          <td data-l="Level"><span class="lvl danger">Danger</span></td>
+          <td data-l="Consequence">Entry refused. Fee gone.</td>
+          <td data-l="Prevention">Centres want two. Carry passport plus licence or citizenship.</td>
+        </tr>
+        <tr>
+          <th scope="row">Late for OnVUE</th>
+          <td data-l="Level"><span class="lvl danger">Danger</span></td>
+          <td data-l="Consequence">More than 15 min late forfeits the fee.</td>
+          <td data-l="Prevention">Start check-in at the 30-minute mark, not at start time.</td>
+        </tr>
+        <tr>
+          <th scope="row">Handwritten notes on OnVUE</th>
+          <td data-l="Level"><span class="lvl danger">Danger</span></td>
+          <td data-l="Consequence">Exam terminated, score invalidated.</td>
+          <td data-l="Prevention">Clear the desk completely. Use the built-in whiteboard.</td>
+        </tr>
+        <tr>
+          <th scope="row">Blank answers</th>
+          <td data-l="Level"><span class="lvl caution">Caution</span></td>
+          <td data-l="Consequence">Scored as wrong.</td>
+          <td data-l="Prevention">Guess on everything. There is no downside.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
 </section>
 
-<!-- ============ 10 ============ -->
-<section>
-  <h2><span class="n">10</span>Action list — do this week</h2>
-  <p class="h2sub">Before any studying happens.</p>
-  <ul class="tick">
-    <li>Create the AWS Certification Account.</li>
-    <li>Compare the account name to your passport, character by character. Fix now if wrong.</li>
-    <li>Request <strong>ESL +30</strong>.</li>
-    <li>Open the scheduling flow and check whether a Kathmandu center delivers AWS. Do not book yet — just find out.</li>
-    <li>Confirm your card takes international USD charges.</li>
-    <li>Read the official exam guide PDF once, end to end. It is the only syllabus that counts.</li>
-  </ul>
-</section>
+</main>
 
-<footer>
-  <strong style="color:var(--ink-2)">Sources</strong> — all verified 9 September 2026.
+<footer id="sources">
+  <h2>Sources</h2>
+  <p>All verified 9 September 2026.</p>
   <ol>
     <li><a href="https://docs.aws.amazon.com/aws-certification/latest/solutions-architect-associate-03/solutions-architect-associate-03.html">AWS — SAA-C03 official exam guide</a> (question counts, scoring, domains)</li>
     <li><a href="https://aws.amazon.com/certification/certified-solutions-architect-associate/">AWS — Certification page</a> (price, duration, languages)</li>
-    <li><a href="https://aws.amazon.com/certification/policies/before-testing/">AWS — Before testing</a> (account, scheduling, reschedule/cancel)</li>
+    <li><a href="https://aws.amazon.com/certification/policies/before-testing/">AWS — Before testing</a> (account, scheduling, reschedule and cancel)</li>
     <li><a href="https://aws.amazon.com/certification/policies/during-testing/">AWS — During testing</a> (ID, arrival, breaks, termination)</li>
     <li><a href="https://aws.amazon.com/certification/policies/recertification/">AWS — Recertification</a> (3-year validity)</li>
     <li><a href="https://www.pearsonvue.com/us/en/onvue/requirements.html">Pearson VUE — OnVUE requirements</a></li>
   </ol>
+  <p class="disc">Personal study notes. Not affiliated with or endorsed by Amazon Web Services.</p>
 </footer>
 
 </div>
