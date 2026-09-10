@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Day 02 — Cloud Basics | AWS SAA-C03</title>
+<link rel="stylesheet" href="notes.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+<header class="top" id="top">
+  <h1>Cloud Basics</h1>
+  <p class="sub">Why the cloud exists, what you are actually renting, who is responsible for which layer, and the 25 services this course will cover.</p>
+  <div class="meta">
+    <span class="chip on">Day 02 · Cloud Basics</span>
+    <span class="chip">Service models</span>
+    <span class="chip">Deployment models</span>
+    <span class="chip">Shared responsibility</span>
+    <span class="chip">Lab: first EC2 box</span>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="now">
+  <h2>What to remember</h2>
+  <p class="lede">Most of this day is context. These four points are the ones that turn into exam questions.</p>
+  <ol>
+    <li><b>AWS secures the cloud; you secure what you put in it.</b> Where that line sits depends on the service. <a href="#s05">→ 05</a></li>
+    <li><b>You always own your data and your access controls</b>, in every model, including SaaS. AWS never takes that over. <a href="#s05">→ 05</a></li>
+    <li><b>IaaS / PaaS / SaaS by example:</b> EC2 / Elastic Beanstalk / Gmail. Know which is which by who manages the operating system. <a href="#s05">→ 05</a></li>
+    <li><b>A Region contains at least three Availability Zones</b>, isolated and physically separate. Region ≠ AZ, and the exam leans on the difference. <a href="#s08">→ 08</a></li>
+  </ol>
+</div>
+
+<nav class="toc" aria-labelledby="toc-h">
+  <h2 id="toc-h">On this page</h2>
+  <ol>
+    <li><a href="#s01"><span class="n">01</span> Why cloud exists</a></li>
+    <li><a href="#s02"><span class="n">02</span> What you are renting</a></li>
+    <li><a href="#s03"><span class="n">03</span> The benefits</a></li>
+    <li><a href="#s04"><span class="n">04</span> Same problems, new names</a></li>
+    <li><a href="#s05"><span class="n">05</span> Service models</a></li>
+    <li><a href="#s06"><span class="n">06</span> Deployment models</a></li>
+    <li><a href="#s07"><span class="n">07</span> The catch</a></li>
+    <li><a href="#s08"><span class="n">08</span> Providers, and why AWS</a></li>
+    <li><a href="#s09"><span class="n">09</span> The 25 services</a></li>
+    <li><a href="#s10"><span class="n">10</span> Lab: your first EC2 box</a></li>
+  </ol>
+</nav>
+
+<!-- 01 -->
+<section id="s01" aria-labelledby="h01">
+  <h2 id="h01"><span class="n">01</span> Why cloud exists</h2>
+  <p class="thesis">Because demand is spiky and hardware is not.</p>
+  <p>To run a service yourself you must own three things outright: <strong>internet</strong>, <strong>hardware</strong> and <strong>electricity</strong>. All three are bought ahead of time, and all three are sized for the worst day of the year.</p>
+  <p>That is the whole problem. Traffic arrives in spikes; servers arrive in fixed quantities with a six-week lead time. So you buy for the peak, pay for the peak, and use the average.</p>
+  <figure>
+    <img class="photo" src="img/datacenter.webp" width="1200" height="800" loading="lazy" decoding="async"
+         alt="A large room filled with rows of server racks, some labelled Mail Servers, Database Servers and World Wide Web.">
+    <figcaption>This is what "we run our own servers" looks like: CERN's data centre, with racks hand-labelled <em>Mail Servers</em>, <em>Database Servers</em> and <em>World Wide Web</em>. Every one of those boxes was specified, bought, delivered, racked, cabled, cooled and paid for before it served a single request.</figcaption>
+    <p class="credit">Photo by Hugo van Meijeren, <a href="https://commons.wikimedia.org/wiki/File:Cern_datacenter.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/3.0">CC BY-SA 3.0</a>.</p>
+  </figure>
+
+  <figure>
+    <svg class="chart" viewBox="0 0 520 232" role="img" aria-label="Chart comparing demand against provisioned capacity over time. Capacity rises in fixed steps and mostly sits far above demand, which is wasted spend. At one peak demand rises above capacity, which is an outage.">
+      <defs>
+        <mask id="aboveDemand">
+          <rect x="0" y="0" width="520" height="232" fill="#fff"/>
+          <path fill="#000" d="M60 180 C100 174 130 166 158 154 C186 142 206 128 232 118 C252 110 266 108 282 96 C300 78 318 34 344 24 C370 14 384 58 402 90 C428 128 456 156 480 168 C490 173 496 175 500 176 V190 H60 Z"/>
+        </mask>
+        <mask id="aboveCap">
+          <rect x="0" y="0" width="520" height="232" fill="#fff"/>
+          <path fill="#000" d="M60 130 H170 V96 H280 V62 H390 V44 H500 V190 H60 Z"/>
+        </mask>
+      </defs>
+      <line class="grid" x1="60" y1="40" x2="500" y2="40"/>
+      <line class="grid" x1="60" y1="90" x2="500" y2="90"/>
+      <line class="grid" x1="60" y1="140" x2="500" y2="140"/>
+      <path class="waste" mask="url(#aboveDemand)" d="M60 130 H170 V96 H280 V62 H390 V44 H500 V190 H60 Z"/>
+      <path class="short" mask="url(#aboveCap)" d="M60 180 C100 174 130 166 158 154 C186 142 206 128 232 118 C252 110 266 108 282 96 C300 78 318 34 344 24 C370 14 384 58 402 90 C428 128 456 156 480 168 C490 173 496 175 500 176 V190 H60 Z"/>
+      <path class="cap" d="M60 130 H170 V96 H280 V62 H390 V44 H500"/>
+      <path class="demand" d="M60 180 C100 174 130 166 158 154 C186 142 206 128 232 118 C252 110 266 108 282 96 C300 78 318 34 344 24 C370 14 384 58 402 90 C428 128 456 156 480 168 C490 173 496 175 500 176"/>
+      <line class="axis" x1="60" y1="190" x2="500" y2="190"/>
+      <line class="axis" x1="60" y1="26" x2="60" y2="190"/>
+      <text x="52" y="34" text-anchor="end" font-size="13" font-weight="600" fill="var(--ink-3)" font-family="ui-monospace,monospace">high</text>
+      <text x="52" y="188" text-anchor="end" font-size="13" font-weight="600" fill="var(--ink-3)" font-family="ui-monospace,monospace">low</text>
+      <text x="60" y="212" font-size="13" font-weight="600" fill="var(--ink-3)" font-family="ui-monospace,monospace">time</text>
+      <text x="344" y="212" text-anchor="middle" font-size="13" font-weight="600" fill="var(--danger)" font-family="ui-monospace,monospace">launch day</text>
+    </svg>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--ink-2)"></i> Capacity you bought, in fixed steps</span>
+      <span><i class="sw" style="background:var(--accent)"></i> Demand, which does what it likes</span>
+      <span><i class="sw" style="background:var(--caution);opacity:.55"></i> Paid for, never used</span>
+      <span><i class="sw" style="background:var(--danger);opacity:.6"></i> Needed, did not have — the outage</span>
+    </div>
+    <figcaption>Hardware only comes in steps, and each step takes weeks to arrive. The gap above the demand line is money burnt; the one moment the line pokes above capacity is the day the service fell over. Cloud lets the capacity line follow the demand curve instead of bracketing it.</figcaption>
+  </figure>
+
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> The two ways to get it wrong</span>
+    <p><strong>Over-provision</strong> and you pay for idle machines every hour they are not needed. <strong>Under-provision</strong> and the service falls over on the day it finally matters. Before the cloud you had to pick one; there was no third option.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 02 -->
+<section id="s02" aria-labelledby="h02">
+  <h2 id="h02"><span class="n">02</span> What you are renting</h2>
+  <p class="thesis">Four primitives, from someone else's data centre.</p>
+  <div class="tw">
+    <table>
+      <caption>The four building blocks</caption>
+      <thead><tr><th scope="col">Primitive</th><th scope="col">What it is</th><th scope="col">AWS example</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Compute</th><td data-l="What it is">Somewhere to run code</td><td data-l="AWS example" class="mono"><img class="ico-sm" src="icons/ec2.svg" alt="">EC2 <img class="ico-sm" src="icons/lambda.svg" alt="">Lambda</td></tr>
+        <tr><th scope="row">Storage</th><td data-l="What it is">Somewhere to keep files and blocks</td><td data-l="AWS example" class="mono"><img class="ico-sm" src="icons/s3.svg" alt="">S3 <img class="ico-sm" src="icons/ebs.svg" alt="">EBS</td></tr>
+        <tr><th scope="row">Database</th><td data-l="What it is">Somewhere to keep structured, queryable data</td><td data-l="AWS example" class="mono"><img class="ico-sm" src="icons/rds.svg" alt="">RDS <img class="ico-sm" src="icons/dynamodb.svg" alt="">DynamoDB</td></tr>
+        <tr><th scope="row">Network</th><td data-l="What it is">The wiring between all of it, and to the internet</td><td data-l="AWS example" class="mono"><img class="ico-sm" src="icons/vpc.svg" alt="">VPC <img class="ico-sm" src="icons/route53.svg" alt="">Route 53</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Everything else in the 200-plus service catalogue is a convenience built on top of these four. A <strong>provider</strong> is simply whoever rents them to you: AWS, Azure, Google Cloud, Alibaba, Tencent.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 03 -->
+<section id="s03" aria-labelledby="h03">
+  <h2 id="h03"><span class="n">03</span> The benefits</h2>
+  <p class="thesis">AWS publishes six. Learn them in AWS's words, because that is the wording the exam uses.</p>
+
+  <div class="tw">
+    <table>
+      <caption>AWS's six advantages</caption>
+      <thead><tr><th scope="col">AWS's wording</th><th scope="col">What it means in practice</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Trade fixed expense for variable expense</th><td data-l="What it means">Stop buying servers up front. Pay per hour, per GB, per request. Capital expenditure becomes operating expenditure.</td></tr>
+        <tr><th scope="row">Benefit from massive economies of scale</th><td data-l="What it means">Hundreds of thousands of customers' usage is aggregated, so the per-unit price is lower than you could ever reach alone.</td></tr>
+        <tr><th scope="row">Stop guessing capacity</th><td data-l="What it means">Scale up and down on demand instead of committing to a number months in advance.</td></tr>
+        <tr><th scope="row">Increase speed and agility</th><td data-l="What it means">New resources are minutes away instead of weeks, so experiments become cheap.</td></tr>
+        <tr><th scope="row">Stop spending money running data centres</th><td data-l="What it means">No racking, stacking or powering. Effort moves to what differentiates the business.</td></tr>
+        <tr><th scope="row">Go global in minutes</th><td data-l="What it means">Deploy near users in another continent without building anything there.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>How the class list maps onto those six</h3>
+  <div class="tw">
+    <table>
+      <caption>Class list reconciled</caption>
+      <thead><tr><th scope="col">From class</th><th scope="col">AWS's equivalent</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Easy setup</th><td data-l="AWS equivalent">Increase speed and agility</td></tr>
+        <tr><th scope="row">Cost, like rent (pay as you go)</th><td data-l="AWS equivalent">Trade fixed expense for variable expense + economies of scale</td></tr>
+        <tr><th scope="row">Scalability, manual or automatic</th><td data-l="AWS equivalent">Stop guessing capacity</td></tr>
+        <tr><th scope="row">High reliability, fault tolerance</th><td data-l="AWS equivalent">Not one of the six — it comes from Regions and Availability Zones instead</td></tr>
+        <tr><th scope="row">Little to no maintenance</th><td data-l="AWS equivalent">Stop spending money running data centres</td></tr>
+        <tr><th scope="row">Global access and availability</th><td data-l="AWS equivalent">Go global in minutes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> "Better security" needs qualifying</span>
+    <p>Moving to a managed service does not hand security over. It <strong>moves the boundary</strong>, and everything on your side of it is still yours to get right. Most real breaches are misconfigured buckets and over-broad IAM policies, which are all customer-side. See <a href="#s05">section 05</a>.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 04 -->
+<section id="s04" aria-labelledby="h04">
+  <h2 id="h04"><span class="n">04</span> Same problems, new names</h2>
+  <p class="thesis">Nothing in AWS is a new idea. Every service replaces a box that used to sit in a rack.</p>
+
+  <div class="tw">
+    <table>
+      <caption>Old stack, new names</caption>
+      <thead><tr><th scope="col">Layer</th><th scope="col">Traditional, on-premises</th><th scope="col">AWS</th></tr></thead>
+      <tbody>
+        <tr>
+          <th scope="row">Security</th>
+          <td data-l="Traditional">Firewalls, ACLs, administrators</td>
+          <td data-l="AWS">Security groups, network ACLs, <img class="ico-sm" src="icons/iam.svg" alt="">IAM</td>
+        </tr>
+        <tr>
+          <th scope="row">Networking</th>
+          <td data-l="Traditional">Router, network pipeline, switch</td>
+          <td data-l="AWS"><img class="ico-sm" src="icons/elb.svg" alt="">Elastic Load Balancing <img class="ico-sm" src="icons/vpc.svg" alt="">VPC</td>
+        </tr>
+        <tr>
+          <th scope="row">Compute</th>
+          <td data-l="Traditional">On-premises servers</td>
+          <td data-l="AWS">AMI → <img class="ico-sm" src="icons/ec2.svg" alt="">EC2 instances</td>
+        </tr>
+        <tr>
+          <th scope="row">Storage and database</th>
+          <td data-l="Traditional">DAS, SAN, NAS, RDBMS</td>
+          <td data-l="AWS"><img class="ico-sm" src="icons/ebs.svg" alt="">EBS <img class="ico-sm" src="icons/efs.svg" alt="">EFS <img class="ico-sm" src="icons/s3.svg" alt="">S3 <img class="ico-sm" src="icons/rds.svg" alt="">RDS</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <img class="photo" src="img/switches.webp" width="1200" height="900" loading="lazy" decoding="async"
+         alt="Rack-mounted Ethernet switches and patch panels with dense bundles of coloured network cables.">
+    <figcaption>The left-hand column, physically. Rack-mounted switches and patch panels — the "router, network pipeline, switch" row. In AWS this entire cabinet becomes a VPC with subnets and route tables: the same topology, expressed as configuration instead of copper.</figcaption>
+    <p class="credit">Photo by Dsimic, <a href="https://commons.wikimedia.org/wiki/File:19-inch_rackmount_Ethernet_switches_and_patch_panels.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by-sa/4.0">CC BY-SA 4.0</a>.</p>
+  </figure>
+
+  <h3>The storage mapping is worth memorising</h3>
+  <div class="tw">
+    <table>
+      <caption>Storage terms</caption>
+      <thead><tr><th scope="col">Was</th><th scope="col">Now</th><th scope="col">Why it matches</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">DAS <span class="fine">direct-attached</span></th><td data-l="Now" class="mono"><img class="ico-sm" src="icons/ebs.svg" alt="">EBS</td><td data-l="Why">A disk attached to exactly one machine. Block storage.</td></tr>
+        <tr><th scope="row">NAS <span class="fine">network-attached</span></th><td data-l="Now" class="mono"><img class="ico-sm" src="icons/efs.svg" alt="">EFS</td><td data-l="Why">One file system mounted by many machines at once.</td></tr>
+        <tr><th scope="row">SAN <span class="fine">storage-area network</span></th><td data-l="Now" class="mono"><img class="ico-sm" src="icons/ebs.svg" alt="">EBS</td><td data-l="Why">Block storage over a network fabric. EBS is the closest equivalent.</td></tr>
+        <tr><th scope="row">RDBMS</th><td data-l="Now" class="mono"><img class="ico-sm" src="icons/rds.svg" alt="">RDS</td><td data-l="Why">The same relational engines, with the operating system and patching taken over.</td></tr>
+        <tr><th scope="row">— <span class="fine">no equivalent</span></th><td data-l="Now" class="mono"><img class="ico-sm" src="icons/s3.svg" alt="">S3</td><td data-l="Why"><strong>Object storage has no on-premises ancestor.</strong> Not a disk and not a file system: flat keys, HTTP access, effectively unlimited.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> AMI is not a server</span>
+    <p>An <strong>AMI</strong> (Amazon Machine Image) is the template: a frozen disk image plus settings. An <strong>EC2 instance</strong> is a running machine launched from it. One AMI, many identical instances — which is what makes autoscaling possible at all.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 05 -->
+<section id="s05" aria-labelledby="h05">
+  <h2 id="h05"><span class="n">05</span> Service models</h2>
+  <p class="thesis">IaaS, PaaS and SaaS are one idea seen at three depths: how far up the stack the provider takes over.</p>
+
+  <figure>
+    <div class="tw">
+      <table>
+        <caption>Who manages each layer</caption>
+        <thead>
+          <tr>
+            <th scope="col">Layer</th>
+            <th scope="col">On-premises</th>
+            <th scope="col">IaaS</th>
+            <th scope="col">PaaS</th>
+            <th scope="col">SaaS</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Applications</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl you">You</span></td><td data-l="PaaS"><span class="lvl you">You</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Data</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl you">You</span></td><td data-l="PaaS"><span class="lvl you">You</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Runtime</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl you">You</span></td><td data-l="PaaS"><span class="lvl prov">Provider</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Middleware</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl you">You</span></td><td data-l="PaaS"><span class="lvl prov">Provider</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Operating system</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl you">You</span></td><td data-l="PaaS"><span class="lvl prov">Provider</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Virtualization</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl prov">Provider</span></td><td data-l="PaaS"><span class="lvl prov">Provider</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Servers</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl prov">Provider</span></td><td data-l="PaaS"><span class="lvl prov">Provider</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Storage</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl prov">Provider</span></td><td data-l="PaaS"><span class="lvl prov">Provider</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+          <tr><th scope="row">Networking</th>
+            <td data-l="On-premises"><span class="lvl you">You</span></td><td data-l="IaaS"><span class="lvl prov">Provider</span></td><td data-l="PaaS"><span class="lvl prov">Provider</span></td><td data-l="SaaS"><span class="lvl prov">Provider</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figcaption>The nine layers never change. Only the line between "you" and "provider" moves, and it always moves in one direction — upward.</figcaption>
+  </figure>
+
+  <div class="tally">
+    <div><div class="m">On-premises</div><div class="v">9 of 9</div><div class="d">layers are yours</div></div>
+    <div><div class="m">IaaS</div><div class="v">5 of 9</div><div class="d">you keep the OS upward</div></div>
+    <div><div class="m">PaaS</div><div class="v">2 of 9</div><div class="d">just your app and data</div></div>
+    <div><div class="m">SaaS</div><div class="v">0 of 9</div><div class="d">you only use it</div></div>
+  </div>
+
+  <div class="call danger">
+    <span class="lbl"><span class="tag">Danger</span> The slide oversimplifies SaaS</span>
+    <p>The classic diagram shades <em>all nine</em> SaaS layers as the provider's, data included. That is wrong in the way that costs marks and, later, money.</p>
+    <p>Under the AWS shared responsibility model, <strong>the customer always owns their data and their access controls</strong>, at every service level. AWS is responsible for security <em>of</em> the cloud — hardware, software, networking, facilities. You are responsible for security <em>in</em> the cloud — your data, who can reach it, and how it is encrypted. Nothing you buy transfers that.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>Telling the three apart</caption>
+      <thead><tr><th scope="col">Model</th><th scope="col">You get</th><th scope="col">Examples</th><th scope="col">Who patches the OS</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">IaaS</th><td data-l="You get">Raw hardware, virtualized</td><td data-l="Examples">EC2, Azure Virtual Machines</td><td data-l="Who patches the OS"><strong>You</strong></td></tr>
+        <tr><th scope="row">PaaS</th><td data-l="You get">An operating system and runtime, ready to deploy into</td><td data-l="Examples">Elastic Beanstalk, Google App Engine</td><td data-l="Who patches the OS">Provider</td></tr>
+        <tr><th scope="row">SaaS</th><td data-l="You get">Finished software</td><td data-l="Examples">Gmail, Dropbox, Salesforce</td><td data-l="Who patches the OS">Provider</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">If a question is ambiguous, ask who patches the operating system. That single question separates IaaS from everything above it.</p>
+
+  <h3>Pizza as a service</h3>
+  <figure>
+    <img class="photo" src="img/pizza.webp" width="1200" height="900" loading="lazy" decoding="async"
+         alt="A whole margherita pizza on a plate.">
+    <figcaption>The question is never what is on the plate. It is who bought the flour, who owns the oven, and who does the washing up.</figcaption>
+    <p class="credit">Photo by Shisma, <a href="https://commons.wikimedia.org/wiki/File:Margherita_pizza_on_plate.jpg">Wikimedia Commons</a>, <a href="https://creativecommons.org/licenses/by/4.0">CC BY 4.0</a>.</p>
+  </figure>
+  <div class="tw">
+    <table>
+      <caption>The standard analogy</caption>
+      <thead><tr><th scope="col">You want pizza</th><th scope="col">You provide</th><th scope="col">Model</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Make it at home</th><td data-l="You provide">Ingredients, oven, gas, table, drinks</td><td data-l="Model">On-premises</td></tr>
+        <tr><th scope="row">Take-and-bake</th><td data-l="You provide">Oven, gas, table, drinks</td><td data-l="Model">IaaS</td></tr>
+        <tr><th scope="row">Delivered</th><td data-l="You provide">Table, drinks</td><td data-l="Model">PaaS</td></tr>
+        <tr><th scope="row">Eat at the restaurant</th><td data-l="You provide">Nothing but the appetite</td><td data-l="Model">SaaS</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 06 -->
+<section id="s06" aria-labelledby="h06">
+  <h2 id="h06"><span class="n">06</span> Deployment models</h2>
+  <p class="thesis">The service model is <em>how much</em> is managed. The deployment model is <em>whose hardware</em> it runs on.</p>
+
+  <div class="cols">
+    <div class="card">
+      <h3><span class="w">Shared tenancy</span> Public cloud</h3>
+      <ul>
+        <li>One provider's hardware, many organisations on it</li>
+        <li>Cheapest and fastest to start</li>
+        <li>AWS, Azure, Google Cloud</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Single tenant</span> Private cloud</h3>
+      <ul>
+        <li>Dedicated to one organisation</li>
+        <li>Chosen for security posture and regulatory compliance</li>
+        <li>You carry the cost of the whole thing, busy or idle</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Both at once</span> Hybrid cloud</h3>
+      <ul>
+        <li>Sensitive workloads stay private, the rest goes public</li>
+        <li>A balance of cost, performance and compliance</li>
+        <li>Typical of healthcare and banking, where some records legally cannot leave</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">More than one provider</span> Multi-cloud</h3>
+      <ul>
+        <li>Deliberately spread across providers</li>
+        <li>Avoids vendor lock-in and single-provider outages</li>
+        <li>The most complex to operate: two of everything, including skills</li>
+      </ul>
+    </div>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 07 -->
+<section id="s07" aria-labelledby="h07">
+  <h2 id="h07"><span class="n">07</span> The catch</h2>
+  <p class="thesis">Five real costs, none of which appear on the marketing page.</p>
+  <div class="tw">
+    <table>
+      <caption>The five challenges</caption>
+      <thead><tr><th scope="col">Challenge</th><th scope="col">What it actually means</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Internet dependency</th><td data-l="What it means">No connection, no service. The link becomes a single point of failure you do not control.</td></tr>
+        <tr><th scope="row">Ongoing cost</th><td data-l="What it means">A server is bought once; a cloud bill arrives every month forever. Over a long enough horizon, rent exceeds purchase.</td></tr>
+        <tr><th scope="row">Data security and compliance</th><td data-l="What it means">Your data sits on someone else's hardware, under the laws of whichever country that hardware is in. A provider served a lawful order will comply.</td></tr>
+        <tr><th scope="row">Vendor lock-in</th><td data-l="What it means">The more managed services you adopt, the more rewriting it takes to leave. Convenience and portability trade against each other.</td></tr>
+        <tr><th scope="row">Limited control</th><td data-l="What it means">You cannot inspect the hypervisor, choose the exact hardware, or fix an outage yourself. You wait for the status page like everyone else.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 08 -->
+<section id="s08" aria-labelledby="h08">
+  <h2 id="h08"><span class="n">08</span> Providers, and why AWS</h2>
+  <p class="thesis">Five providers matter. One of them is the exam.</p>
+  <p>The market is <strong>AWS, Microsoft Azure, Google Cloud, Alibaba Cloud</strong> and <strong>Tencent Cloud</strong>. By infrastructure revenue the first three hold roughly two thirds of it between them, AWS the largest single share.</p>
+
+  <figure>
+    <div class="provs">
+      <div class="prov lead">
+        <img src="logos/aws.svg" alt="Amazon Web Services logo">
+        <span class="pn">AWS</span><span class="pd">The one this exam is about. Largest share, widest catalogue.</span>
+      </div>
+      <div class="prov">
+        <img src="logos/azure.svg" alt="Microsoft Azure logo">
+        <span class="pn">Microsoft Azure</span><span class="pd">Second largest. Strong where the organisation already runs Microsoft.</span>
+      </div>
+      <div class="prov">
+        <img src="logos/gcp.svg" alt="Google Cloud logo">
+        <span class="pn">Google Cloud</span><span class="pd">Third. Known for data, analytics and Kubernetes.</span>
+      </div>
+      <div class="prov">
+        <img src="logos/alibaba.svg" alt="Alibaba Cloud logo">
+        <span class="pn">Alibaba Cloud</span><span class="pd">The largest provider in China.</span>
+      </div>
+      <div class="prov">
+        <img src="logos/tencent.svg" alt="Tencent Cloud logo">
+        <span class="pn">Tencent Cloud</span><span class="pd">Also China-centred, strong in gaming and media.</span>
+      </div>
+    </div>
+    <figcaption>The same four primitives from <a href="#s02">section 02</a> are rented by all five. What differs is the catalogue on top, the pricing, and where the data centres are. Skills mostly transfer; the service names do not.</figcaption>
+    <p class="credit">Logos are the trademarks of their respective owners, shown here to identify each provider. AWS mark from the <a href="https://aws.amazon.com/architecture/icons/">AWS Architecture Icons</a>; Azure and Tencent Cloud from <a href="https://commons.wikimedia.org/">Wikimedia Commons</a> (public domain); Google Cloud and Alibaba Cloud from <a href="https://simpleicons.org/">Simple Icons</a> (CC0).</p>
+  </figure>
+
+  <div class="tally">
+    <div><div class="m">Services</div><div class="v">200+</div><div class="d">in the catalogue</div></div>
+    <div><div class="m">Regions</div><div class="v">39</div><div class="d">geographic areas</div></div>
+    <div><div class="m">Availability Zones</div><div class="v">124</div><div class="d">minimum 3 per Region</div></div>
+    <div><div class="m">Announced</div><div class="v">+2</div><div class="d">Regions: Saudi Arabia, Chile</div></div>
+  </div>
+
+  <figure>
+    <div class="region">
+      <span class="rlabel">Region · us-east-2 (Ohio)</span>
+      <div class="azs">
+        <div class="az"><span class="azn">us-east-2a</span>
+          <div class="dc">data centre</div><div class="dc">data centre</div></div>
+        <div class="az"><span class="azn">us-east-2b</span>
+          <div class="dc">data centre</div></div>
+        <div class="az"><span class="azn">us-east-2c</span>
+          <div class="dc">data centre</div><div class="dc">data centre</div></div>
+      </div>
+    </div>
+    <figcaption>One Region, three Availability Zones, each one or more physical data centres with its own power, cooling and network. Losing a whole AZ is survivable if you are running in another; losing a Region is a different and much rarer problem.</figcaption>
+  </figure>
+
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Region and Availability Zone are not the same thing</span>
+    <p>A <strong>Region</strong> is a geographic area, such as <span class="mono">us-east-2</span> (Ohio). An <strong>Availability Zone</strong> is one or more discrete data centres inside that Region, with independent power, cooling and networking.</p>
+    <p>Every Region has <strong>at least three</strong> AZs, isolated and physically separate, but close enough for low-latency links. That is the mechanism behind almost every "highly available" answer on the exam: run in more than one AZ so one failure does not take the service down.</p>
+  </div>
+  <p class="fine">Region and AZ counts move as AWS builds. The class notes recorded 123 AZs; the live figure at the time of writing is 124. Check the source in the footer rather than trusting either number.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 09 -->
+<section id="s09" aria-labelledby="h09">
+  <h2 id="h09"><span class="n">09</span> The 25 services</h2>
+  <p class="thesis">The course roadmap, grouped by what each service is for and tagged with the exam domain it mostly serves.</p>
+
+  <div class="cols three">
+    <div class="card">
+      <h3>Compute <span class="dom">Domain 3 · performance</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/ec2.svg" alt="">EC2</dt><dd>Virtual machines. The default answer for "a server".</dd>
+        <dt><img class="ico" src="icons/lambda.svg" alt="">Lambda</dt><dd>Run a function without a server. Pay per invocation.</dd>
+        <dt><img class="ico" src="icons/beanstalk.svg" alt="">Elastic Beanstalk</dt><dd>Hand over code, AWS provisions the stack. PaaS.</dd>
+        <dt><img class="ico" src="icons/autoscaling.svg" alt="">Auto Scaling</dt><dd>Adds and removes instances against demand.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Containers <span class="dom">Domain 3 · performance</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/ecr.svg" alt="">ECR</dt><dd>Private registry for container images.</dd>
+        <dt><img class="ico" src="icons/ecs.svg" alt="">ECS</dt><dd>Runs and schedules those containers.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Storage <span class="dom">Domains 3 &amp; 4 · performance, cost</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/s3.svg" alt="">S3</dt><dd>Object storage. Flat keys over HTTP, effectively unlimited, with storage classes that trade retrieval speed against price.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Database <span class="dom">Domain 3 · performance</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/rds.svg" alt="">RDS</dt><dd>Managed relational engines: PostgreSQL, MySQL and others.</dd>
+        <dt><img class="ico" src="icons/aurora.svg" alt="">Aurora</dt><dd>AWS's own relational engine, MySQL and PostgreSQL compatible.</dd>
+        <dt><img class="ico" src="icons/dynamodb.svg" alt="">DynamoDB</dt><dd>Managed NoSQL. Single-digit millisecond reads at any scale.</dd>
+        <dt><img class="ico" src="icons/elasticache.svg" alt="">ElastiCache</dt><dd>In-memory cache (Redis, Memcached) in front of a slower store.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Networking &amp; delivery <span class="dom">Domains 1 &amp; 3 · security, performance</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/elb.svg" alt="">Elastic Load Balancing</dt><dd>Spreads traffic across instances and Availability Zones.</dd>
+        <dt><img class="ico" src="icons/cloudfront.svg" alt="">CloudFront</dt><dd>CDN. Caches content at edge locations near users.</dd>
+        <dt><img class="ico" src="icons/route53.svg" alt="">Route 53</dt><dd>DNS, with health checks and routing policies.</dd>
+        <dt><img class="ico" src="icons/apigateway.svg" alt="">API Gateway</dt><dd>Front door for APIs: throttling, auth, versioning.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Security &amp; identity <span class="dom">Domain 1 · security</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/iam.svg" alt="">IAM</dt><dd>Who can do what to which resource. The largest single exam topic.</dd>
+        <dt><img class="ico" src="icons/kms.svg" alt="">KMS</dt><dd>Creates and controls the encryption keys other services use.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Messaging &amp; integration <span class="dom">Domain 2 · resilience</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/sqs.svg" alt="">SQS</dt><dd>Queue. Decouples producers from consumers so a slow consumer cannot drop work.</dd>
+        <dt><img class="ico" src="icons/sns.svg" alt="">SNS</dt><dd>Publish/subscribe. One message fans out to many subscribers.</dd>
+        <dt><img class="ico" src="icons/ses.svg" alt="">SES</dt><dd>Sends transactional and bulk email.</dd>
+        <dt><img class="ico" src="icons/stepfunctions.svg" alt="">Step Functions</dt><dd>Orchestrates multi-step workflows with retries and state.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Management &amp; monitoring <span class="dom">Domain 2 · resilience</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/cloudwatch.svg" alt="">CloudWatch</dt><dd>Metrics, logs and alarms. <em>What is happening.</em></dd>
+        <dt><img class="ico" src="icons/cloudtrail.svg" alt="">CloudTrail</dt><dd>Audit log of every API call. <em>Who did what.</em></dd>
+        <dt><img class="ico" src="icons/cloudformation.svg" alt="">CloudFormation</dt><dd>Infrastructure as code: the stack described in a template.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Streaming <span class="dom">Domain 3 · performance</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/kinesis.svg" alt="">Kinesis</dt><dd>Ingests continuous streams of records in real time.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> CloudWatch and CloudTrail get confused constantly</span>
+    <p>They sound alike and the exam knows it. <strong>CloudWatch</strong> is metrics and logs: CPU is at 90%. <strong>CloudTrail</strong> is an audit trail of API calls: this IAM user deleted that bucket at 14:02. Performance question → CloudWatch. Who-did-this question → CloudTrail.</p>
+  </div>
+  <p class="fine">Deciding which of these to use for a given requirement — weighing cost, security, availability and the business goal — is the solutions architect's actual job, and the thing the exam is testing.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 10 -->
+<section id="s10" aria-labelledby="h10">
+  <h2 id="h10"><span class="n">10</span> Lab: your first EC2 box</h2>
+  <p class="thesis">A first session on a running instance. Every line of it teaches something that comes back later.</p>
+
+  <pre class="term" tabindex="0" role="region" aria-label="Terminal transcript from the EC2 lab session">
+<u>[ec2-user@ip-172-31-40-217 ~]$</u> <b>curl -s https://checkip.amazonaws.com</b>
+<i>3.144.<u>xx</u>.<u>xx</u></i>
+<u>[ec2-user@ip-172-31-40-217 ~]$</u> <b>uname -a</b>
+<i>Linux ip-172-31-40-217.us-east-2.compute.internal ...</i>
+<u>[ec2-user@ip-172-31-40-217 ~]$</u> <b>whoami</b>
+<i>ec2-user</i>
+<u>[ec2-user@ip-172-31-40-217 ~]$</u> <b>mkdir practice &amp;&amp; cd practice/</b>
+<u>[ec2-user@ip-172-31-40-217 practice]$</u> <b>touch cat.txt</b>
+<u>[ec2-user@ip-172-31-40-217 practice]$</u> <b>whoami &gt;&gt; cat.txt</b>
+<u>[ec2-user@ip-172-31-40-217 practice]$</u> <b>hostname &gt;&gt; cat.txt</b>
+<u>[ec2-user@ip-172-31-40-217 practice]$</u> <b>date &gt;&gt; cat.txt</b>
+<u>[ec2-user@ip-172-31-40-217 practice]$</u> <b>cat cat.txt</b>
+<i>ec2-user
+ip-172-31-40-217.us-east-2.compute.internal
+Wed Sep 10 08:12:44 UTC 2026</i>
+</pre>
+  <p class="term-cap">Public IP partly masked. Times on an EC2 instance are UTC by default, not local.</p>
+
+  <div class="tw">
+    <table>
+      <caption>What each command was for</caption>
+      <thead><tr><th scope="col">Command</th><th scope="col">The point of it</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">curl checkip.amazonaws.com</th><td data-l="The point">Returns the instance's <strong>public</strong> IP, as the internet sees it. Compare it with the prompt, which shows the private one. They are different addresses for the same machine.</td></tr>
+        <tr><th scope="row" class="mono">uname -a</th><td data-l="The point">Kernel and architecture. Confirms which Linux you actually landed on.</td></tr>
+        <tr><th scope="row" class="mono">whoami</th><td data-l="The point">Returns <span class="mono">ec2-user</span>, the default login on Amazon Linux. Ubuntu images use <span class="mono">ubuntu</span> instead; using the wrong one is the most common first-SSH failure.</td></tr>
+        <tr><th scope="row" class="mono">hostname</th><td data-l="The point">Prints the internal DNS name, which encodes the private IP and the Region.</td></tr>
+        <tr><th scope="row" class="mono">&gt;&gt; vs &gt;</th><td data-l="The point"><span class="mono">&gt;&gt;</span> appends, <span class="mono">&gt;</span> overwrites. Confusing the two is how a log file becomes one line long.</td></tr>
+        <tr><th scope="row" class="mono">history</th><td data-l="The point">Everything typed this session. Useful for writing notes afterwards — which is where this transcript came from.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Read the prompt: it tells you four things</h3>
+  <p>The hostname <span class="mono">ip-172-31-40-217.us-east-2.compute.internal</span> is not decoration. It decomposes:</p>
+  <div class="tw">
+    <table>
+      <caption>Hostname, decomposed</caption>
+      <thead><tr><th scope="col">Part</th><th scope="col">Meaning</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">ip-172-31-40-217</th><td data-l="Meaning">The <strong>private IPv4 address</strong> 172.31.40.217, with dots turned into dashes.</td></tr>
+        <tr><th scope="row" class="mono">172.31.x.x</th><td data-l="Meaning">Inside the <strong>default VPC</strong>, which AWS creates with the CIDR block <span class="mono">172.31.0.0/16</span> — about 65,000 private addresses, carved into one <span class="mono">/20</span> subnet per Availability Zone.</td></tr>
+        <tr><th scope="row" class="mono">us-east-2</th><td data-l="Meaning">The <strong>Region</strong>: US East (Ohio).</td></tr>
+        <tr><th scope="row" class="mono">compute.internal</th><td data-l="Meaning">AWS's internal DNS suffix. Resolvable from inside the VPC, meaningless outside it.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> This is the /24 arithmetic from Day 01, in the wild</span>
+    <p>A <span class="mono">/16</span> fixes the first 16 bits and leaves 16 free, so 2<sup>16</sup> = 65,536 addresses. A <span class="mono">/20</span> leaves 12 free: 2<sup>12</sup> = 4,096 per subnet. The private ranges — <span class="mono">10.0.0.0/8</span>, <span class="mono">172.16.0.0/12</span>, <span class="mono">192.168.0.0/16</span> — are the reason your instance's address starts with 172.31 and not something routable.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+</main>
+
+<footer id="sources">
+  <h2>Sources</h2>
+  <p>Class notes checked against AWS documentation. Verified 10 September 2026.</p>
+  <ol>
+    <li><a href="https://docs.aws.amazon.com/whitepapers/latest/aws-overview/six-advantages-of-cloud-computing.html">AWS — Six advantages of cloud computing</a></li>
+    <li><a href="https://aws.amazon.com/compliance/shared-responsibility-model/">AWS — Shared responsibility model</a></li>
+    <li><a href="https://aws.amazon.com/about-aws/global-infrastructure/regions_az/">AWS — Global infrastructure: Regions and Availability Zones</a> (Region and AZ counts)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc-components.html">AWS — Default VPC components</a> (the 172.31.0.0/16 CIDR and /20 subnets)</li>
+    <li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/managing-users.html">AWS — Manage system users on an EC2 Linux instance</a> (the ec2-user default)</li>
+    <li><a href="https://www.optimizely.com/insights/blog/pizza-as-a-service/">Pizza as a Service</a> (the analogy, widely attributed to Albert Barron)</li>
+    <li><a href="https://aws.amazon.com/architecture/icons/">AWS Architecture Icons</a> (the service icons on this page)</li>
+  </ol>
+  <p class="disc">Personal study notes. Photographs are Creative Commons, credited and licensed beneath each one. Service icons are the official AWS Architecture Icons, used unmodified under AWS's terms for architecture diagrams and training material; all other diagrams are redrawn from class material rather than reproduced. Not affiliated with or endorsed by Amazon Web Services.</p>
+</footer>
+
+</div>
+</body>
+</html>
