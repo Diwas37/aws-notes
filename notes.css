@@ -401,7 +401,7 @@ dl.svc dd{margin-left:36px}
 .az .azn{font:700 12px/1.4 var(--mono);color:var(--ink);display:block;margin-bottom:8px}
 .az .dc{
   border:1px solid var(--line-2);border-radius:5px;background:var(--sunk);
-  padding:5px 8px;margin-bottom:5px;font:600 11.5px/1.45 var(--mono);color:var(--ink-2)
+  padding:6px 9px;margin-bottom:5px;font:600 12.5px/1.45 var(--mono);color:var(--ink-2)
 }
 .az .dc:last-child{margin-bottom:0}
 
@@ -429,3 +429,52 @@ figure .credit a{color:var(--ink-3)}
 .prov .pd{display:block;font-size:12.5px;color:var(--ink-2);margin-top:5px;line-height:1.45}
 .prov.lead{border-color:var(--accent-line);background:var(--accent-soft)}
 .prov.lead .pn{color:var(--accent)}
+
+/* ============================================================
+   Components added for Day 01
+   ============================================================ */
+
+/* 32-bit address diagram */
+.bits{margin:0;overflow-x:auto}
+.bitrow{display:flex;gap:6px;min-width:min-content;align-items:stretch}
+.oct{
+  flex:1 1 0;min-width:96px;text-align:center;border-radius:7px;padding:9px 6px;
+  font:700 13px/1.5 var(--mono);border:1px solid
+}
+.oct .dec{display:block;font-size:16px;margin-bottom:2px}
+.oct.net{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+.oct.host{background:var(--good-soft);color:var(--good);border-color:var(--good-line)}
+.bitkey{display:flex;gap:6px;margin-top:7px;min-width:min-content}
+.bitkey span{
+  flex:1 1 0;min-width:96px;text-align:center;
+  font:600 12.5px/1.4 var(--mono);color:var(--ink-3)
+}
+
+/* vertical layer stack, used for hypervisor comparison */
+.stack{display:flex;flex-direction:column;gap:5px;margin:0}
+.stack div{
+  border:1px solid var(--line-2);border-radius:6px;background:var(--sunk);
+  padding:8px 12px;font:600 12.5px/1.45 var(--mono);color:var(--ink-2);text-align:center
+}
+.stack div.hi{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.stack div.hw{background:var(--panel);border-style:dashed;color:var(--ink-3)}
+.stack .arrow{border:none;background:none;padding:1px;color:var(--ink-3);font-size:13px}
+
+/* permission octal breakdown */
+.perm{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 6px}
+.perm>div{
+  flex:1 1 150px;border:1px solid var(--line);border-radius:9px;
+  background:var(--panel);padding:13px 15px;text-align:center
+}
+.perm .who{font:700 11px/1.4 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.perm .rwx{font:700 21px/1.3 var(--mono);color:var(--accent);margin:5px 0 3px;letter-spacing:.12em}
+.perm .num{font:700 14px/1.3 var(--mono);color:var(--ink)}
+.perm .sum{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+
+/* routing flow: subnet boxes with a route line */
+.subnetbox{border:1.5px solid var(--line-2);border-radius:9px;padding:12px;background:var(--panel)}
+.subnetbox.pub{border-color:var(--good-line);background:var(--good-soft)}
+.subnetbox.priv{border-color:var(--note-line);background:var(--note-soft)}
+.subnetbox .sn{font:700 12px/1.4 var(--mono);color:var(--ink);display:block;margin-bottom:7px}
+.subnetbox .rt{font:600 12.5px/1.5 var(--mono);color:var(--ink-2);display:block;margin-top:7px}
+.subnetbox img{height:26px;width:auto;vertical-align:-7px;margin-right:6px}

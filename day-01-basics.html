@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Day 01 — Basics | AWS SAA-C03</title>
+<link rel="stylesheet" href="notes.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+<header class="top" id="top">
+  <h1>Networking, Virtualization and Linux</h1>
+  <p class="sub">The groundwork under everything else: how an address is built, how packets are routed and filtered, how one machine becomes many, and how to drive the Linux box at the end of it.</p>
+  <div class="meta">
+    <span class="chip on">Day 01 · Basics</span>
+    <span class="chip">IP &amp; subnets</span>
+    <span class="chip">TCP/IP &amp; ports</span>
+    <span class="chip">Routing &amp; NAT</span>
+    <span class="chip">Hypervisors</span>
+    <span class="chip">Linux</span>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="now">
+  <h2>What to remember</h2>
+  <p class="lede">This day is fundamentals, so most of it is assumed rather than asked, but these five turn into questions directly.</p>
+  <ol>
+    <li><b>A subnet lives in exactly one Availability Zone</b>, and AWS reserves <b>5 addresses</b> in every subnet regardless of size. <a href="#s02">→ 02</a></li>
+    <li><b>Security groups are stateful and allow-only; NACLs are stateless and can deny.</b> To block a single malicious IP, only a NACL can do it. <a href="#s07">→ 07</a></li>
+    <li><b>Public subnet = a route to an internet gateway. Private subnet = a route to a NAT gateway.</b> That route is the entire difference. <a href="#s08">→ 08</a></li>
+    <li><b>ALB is layer 7, NLB is layer 4.</b> Questions about paths and hostnames mean ALB; questions about raw TCP throughput or static IPs mean NLB. <a href="#s04">→ 04</a></li>
+    <li><b>An SSH key file must be <code>chmod 400</code></b>, or the client refuses to use it. The single most common first-connection failure. <a href="#s11">→ 11</a></li>
+  </ol>
+</div>
+
+<nav class="toc" aria-labelledby="toc-h">
+  <h2 id="toc-h">On this page</h2>
+  <ol>
+    <li><a href="#s01"><span class="n">01</span> How an IP address is built</a></li>
+    <li><a href="#s02"><span class="n">02</span> Subnets, and the five AWS takes</a></li>
+    <li><a href="#s03"><span class="n">03</span> TCP and UDP</a></li>
+    <li><a href="#s04"><span class="n">04</span> OSI and TCP/IP</a></li>
+    <li><a href="#s05"><span class="n">05</span> Ports</a></li>
+    <li><a href="#s06"><span class="n">06</span> DNS and HTTP</a></li>
+    <li><a href="#s07"><span class="n">07</span> Controlling access</a></li>
+    <li><a href="#s08"><span class="n">08</span> Routing and NAT</a></li>
+    <li><a href="#s09"><span class="n">09</span> Virtualization</a></li>
+    <li><a href="#s10"><span class="n">10</span> Linux and its distributions</a></li>
+    <li><a href="#s11"><span class="n">11</span> File permissions</a></li>
+    <li><a href="#s12"><span class="n">12</span> Commands worth knowing</a></li>
+  </ol>
+</nav>
+
+<!-- 01 -->
+<section id="s01" aria-labelledby="h01">
+  <h2 id="h01"><span class="n">01</span> How an IP address is built</h2>
+  <p class="thesis">An IPv4 address is 32 bits. Everything else about subnetting follows from that one number.</p>
+
+  <p>Those 32 bits are written as four 8-bit groups in decimal, which is why each part runs 0 to 255. Take the address from the Day 02 lab:</p>
+
+  <figure>
+    <div class="bits">
+      <div class="bitrow">
+        <span class="oct net"><span class="dec">172</span>10101100</span>
+        <span class="oct net"><span class="dec">31</span>00011111</span>
+        <span class="oct net"><span class="dec">40</span>00101000</span>
+        <span class="oct host"><span class="dec">217</span>11011001</span>
+      </div>
+      <div class="bitkey">
+        <span>8 bits</span><span>8 bits</span><span>8 bits</span><span>8 bits</span>
+      </div>
+    </div>
+    <div class="legend">
+      <span><i class="sw" style="background:var(--accent)"></i> Network portion — fixed by the prefix</span>
+      <span><i class="sw" style="background:var(--good)"></i> Host portion — free to vary</span>
+    </div>
+    <figcaption>172.31.40.217 shown as a <code>/24</code>: the first 24 bits identify the network and are the same for every machine on it. That leaves the last 8 bits free to number individual hosts.</figcaption>
+  </figure>
+
+  <h3>What the slash means</h3>
+  <p><strong>CIDR notation</strong> writes the prefix length after a slash. <code>/24</code> means <em>the first 24 bits are fixed</em>. Subtract from 32 and you get the free bits, and two to that power is how many addresses the block holds.</p>
+
+  <div class="tw">
+    <table>
+      <caption>Prefix arithmetic</caption>
+      <thead><tr><th scope="col">CIDR</th><th scope="col">Fixed bits</th><th scope="col">Free bits</th><th scope="col">Total addresses</th><th scope="col">Usable in AWS</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">/16</th><td data-l="Fixed">16</td><td data-l="Free">16</td><td data-l="Total" class="mono">2<sup>16</sup> = 65,536</td><td data-l="Usable in AWS" class="mono">65,531</td></tr>
+        <tr><th scope="row" class="mono">/20</th><td data-l="Fixed">20</td><td data-l="Free">12</td><td data-l="Total" class="mono">2<sup>12</sup> = 4,096</td><td data-l="Usable in AWS" class="mono">4,091</td></tr>
+        <tr><th scope="row" class="mono">/24</th><td data-l="Fixed">24</td><td data-l="Free">8</td><td data-l="Total" class="mono">2<sup>8</sup> = 256</td><td data-l="Usable in AWS" class="mono">251</td></tr>
+        <tr><th scope="row" class="mono">/28</th><td data-l="Fixed">28</td><td data-l="Free">4</td><td data-l="Total" class="mono">2<sup>4</sup> = 16</td><td data-l="Usable in AWS" class="mono">11</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Smaller number, bigger network</span>
+    <p>This trips everyone up at first. A <code>/16</code> is <em>larger</em> than a <code>/24</code>, because fewer fixed bits leaves more free ones. Fewer fixed bits, more room.</p>
+  </div>
+
+  <h3>Private ranges</h3>
+  <p>Three blocks are reserved for private networks and are never routed on the public internet. Your VPC will use one of them, which is why the lab instance answered to <code>172.31.40.217</code> and not something reachable from outside.</p>
+  <div class="tw">
+    <table>
+      <caption>RFC 1918 private ranges</caption>
+      <thead><tr><th scope="col">Block</th><th scope="col">Range</th><th scope="col">Where you see it</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">10.0.0.0/8</th><td data-l="Range" class="mono">10.0.0.0 – 10.255.255.255</td><td data-l="Where">The usual choice for a custom VPC. Largest of the three.</td></tr>
+        <tr><th scope="row" class="mono">172.16.0.0/12</th><td data-l="Range" class="mono">172.16.0.0 – 172.31.255.255</td><td data-l="Where"><strong>AWS default VPCs live here</strong>, at 172.31.0.0/16.</td></tr>
+        <tr><th scope="row" class="mono">192.168.0.0/16</th><td data-l="Range" class="mono">192.168.0.0 – 192.168.255.255</td><td data-l="Where">Home routers, mostly.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 02 -->
+<section id="s02" aria-labelledby="h02">
+  <h2 id="h02"><span class="n">02</span> Subnets, and the five AWS takes</h2>
+  <p class="thesis">A VPC is a private network you own. Subnets slice it up, usually one per Availability Zone.</p>
+
+  <figure>
+    <div class="region">
+      <span class="rlabel">VPC · 10.0.0.0/16 · one Region</span>
+      <div class="azs">
+        <div class="az"><span class="azn">us-east-2a</span>
+          <div class="dc">subnet 10.0.1.0/24</div><div class="dc">subnet 10.0.2.0/24</div></div>
+        <div class="az"><span class="azn">us-east-2b</span>
+          <div class="dc">subnet 10.0.3.0/24</div><div class="dc">subnet 10.0.4.0/24</div></div>
+        <div class="az"><span class="azn">us-east-2c</span>
+          <div class="dc">subnet 10.0.5.0/24</div><div class="dc">subnet 10.0.6.0/24</div></div>
+      </div>
+    </div>
+    <figcaption>A VPC spans the whole Region. Each <strong>subnet sits inside exactly one Availability Zone</strong> and never straddles two. Spreading subnets across AZs is what makes an architecture survive losing one — the mechanism behind nearly every "highly available" answer on the exam.</figcaption>
+  </figure>
+
+  <h3>AWS takes five addresses from every subnet</h3>
+  <p>Not four, not two. Five, in every subnet, whatever its size. In a <code>10.0.0.0/24</code>:</p>
+  <div class="tw">
+    <table>
+      <caption>Reserved in every subnet</caption>
+      <thead><tr><th scope="col">Address</th><th scope="col">Taken for</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">10.0.0.0</th><td data-l="Taken for">The network address itself.</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.1</th><td data-l="Taken for">The VPC router.</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.2</th><td data-l="Taken for">DNS. Always the base of the VPC range plus two.</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.3</th><td data-l="Taken for">Reserved by AWS for future use.</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.255</th><td data-l="Taken for">Broadcast. VPCs do not support broadcast, but the address is reserved anyway.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> This bites on small subnets</span>
+    <p>A <code>/28</code> holds 16 addresses and gives you <strong>11</strong>. AWS will not let you create anything smaller than a <code>/28</code>, or larger than a <code>/16</code>, for exactly this reason. If an exam question asks how many instances fit in a subnet, subtract five.</p>
+  </div>
+
+  <h3>Public, private and elastic addresses</h3>
+  <div class="tw">
+    <table>
+      <caption>Three kinds of address</caption>
+      <thead><tr><th scope="col">Kind</th><th scope="col">Behaviour</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Private IP</th><td data-l="Behaviour">From the subnet range. Stays with the instance for its whole life. Not reachable from the internet.</td></tr>
+        <tr><th scope="row">Public IP</th><td data-l="Behaviour">Assigned from AWS's pool. <strong>Released and re-drawn every time the instance stops and starts</strong>, so it is not something you can point DNS at.</td></tr>
+        <tr><th scope="row"><img class="ico-sm" src="icons/eip.svg" alt="">Elastic IP</th><td data-l="Behaviour">A static public IPv4 you allocate and keep. Survives stop/start, and can be moved to another instance during a failover. This is the "fixed IP" from the class notes.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Elastic IPs are charged when idle</span>
+    <p>AWS bills for an Elastic IP that is allocated but not attached to a running instance. The pricing is deliberately backwards to discourage hoarding scarce IPv4 addresses.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 03 -->
+<section id="s03" aria-labelledby="h03">
+  <h2 id="h03"><span class="n">03</span> TCP and UDP</h2>
+  <p class="thesis">Two ways to send data. One checks it arrived, the other does not.</p>
+  <div class="tw">
+    <table>
+      <caption>TCP against UDP</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">TCP</th><th scope="col">UDP</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Connection</th><td data-l="TCP">Handshake before any data moves</td><td data-l="UDP">None. Just sends.</td></tr>
+        <tr><th scope="row">Delivery</th><td data-l="TCP">Guaranteed. Lost packets are retransmitted.</td><td data-l="UDP">Best effort. A lost packet is simply gone.</td></tr>
+        <tr><th scope="row">Order</th><td data-l="TCP">Reassembled in order</td><td data-l="UDP">May arrive out of order</td></tr>
+        <tr><th scope="row">Overhead</th><td data-l="TCP">Higher — acknowledgements, sequence numbers, window</td><td data-l="UDP">Minimal</td></tr>
+        <tr><th scope="row">Speed</th><td data-l="TCP">Slower</td><td data-l="UDP">Faster</td></tr>
+        <tr><th scope="row">Used by</th><td data-l="TCP">HTTP, HTTPS, SSH, SMTP, database connections</td><td data-l="UDP">DNS lookups, video streaming, voice, gaming</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> The three-way handshake</span>
+    <p>TCP opens with <code>SYN</code> → <code>SYN-ACK</code> → <code>ACK</code>. Three messages before a single byte of payload. That round trip is exactly what UDP skips, and exactly why a dropped video frame is preferable to a stalled call.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 04 -->
+<section id="s04" aria-labelledby="h04">
+  <h2 id="h04"><span class="n">04</span> OSI and TCP/IP</h2>
+  <p class="thesis">Two models of the same thing. OSI has seven layers and is the teaching model; TCP/IP has four and is what actually runs.</p>
+  <div class="tw">
+    <table>
+      <caption>The two models side by side</caption>
+      <thead><tr><th scope="col">Layer</th><th scope="col">OSI</th><th scope="col">TCP/IP</th><th scope="col">Carries</th><th scope="col">In AWS</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">7</th><td data-l="OSI">Application</td><td data-l="TCP/IP" rowspan="3">Application</td><td data-l="Carries">HTTP, DNS, SSH</td><td data-l="In AWS"><strong>ALB</strong> routes here — on paths and hostnames</td></tr>
+        <tr><th scope="row" class="mono">6</th><td data-l="OSI">Presentation</td><td data-l="Carries">TLS, encoding, compression</td><td data-l="In AWS">Certificates from ACM</td></tr>
+        <tr><th scope="row" class="mono">5</th><td data-l="OSI">Session</td><td data-l="Carries">Opening and closing conversations</td><td data-l="In AWS">—</td></tr>
+        <tr><th scope="row" class="mono">4</th><td data-l="OSI">Transport</td><td data-l="TCP/IP">Transport</td><td data-l="Carries">TCP, UDP, port numbers</td><td data-l="In AWS"><strong>NLB</strong> routes here — raw TCP, very fast</td></tr>
+        <tr><th scope="row" class="mono">3</th><td data-l="OSI">Network</td><td data-l="TCP/IP">Internet</td><td data-l="Carries">IP addresses, routing</td><td data-l="In AWS">Route tables, NACLs</td></tr>
+        <tr><th scope="row" class="mono">2</th><td data-l="OSI">Data link</td><td data-l="TCP/IP" rowspan="2">Network access</td><td data-l="Carries">MAC addresses, Ethernet frames</td><td data-l="In AWS">Elastic network interfaces</td></tr>
+        <tr><th scope="row" class="mono">1</th><td data-l="OSI">Physical</td><td data-l="Carries">Cables, radio, light</td><td data-l="In AWS">Entirely AWS's problem</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Layer 7 versus layer 4 is an exam favourite</span>
+    <p>If a question mentions routing by URL path, hostname, or HTTP header, the answer is an <strong>Application Load Balancer</strong> (layer 7). If it mentions extreme throughput, static IP addresses, or a protocol that is not HTTP, the answer is a <strong>Network Load Balancer</strong> (layer 4).</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 05 -->
+<section id="s05" aria-labelledby="h05">
+  <h2 id="h05"><span class="n">05</span> Ports</h2>
+  <p class="thesis">An IP address finds the machine. A port finds the program on it.</p>
+  <div class="tw">
+    <table>
+      <caption>Ports worth memorising</caption>
+      <thead><tr><th scope="col">Port</th><th scope="col">Protocol</th><th scope="col">Service</th><th scope="col">Note</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">22</th><td data-l="Protocol">TCP</td><td data-l="Service">SSH / SFTP</td><td data-l="Note">How you reached the lab instance.</td></tr>
+        <tr><th scope="row" class="mono">25</th><td data-l="Protocol">TCP</td><td data-l="Service">SMTP</td><td data-l="Note">Outbound is throttled by default on EC2.</td></tr>
+        <tr><th scope="row" class="mono">53</th><td data-l="Protocol">TCP + UDP</td><td data-l="Service">DNS</td><td data-l="Note">UDP normally; TCP for large answers.</td></tr>
+        <tr><th scope="row" class="mono">80</th><td data-l="Protocol">TCP</td><td data-l="Service">HTTP</td><td data-l="Note">—</td></tr>
+        <tr><th scope="row" class="mono">443</th><td data-l="Protocol">TCP</td><td data-l="Service">HTTPS</td><td data-l="Note">HTTP wrapped in TLS.</td></tr>
+        <tr><th scope="row" class="mono">1433</th><td data-l="Protocol">TCP</td><td data-l="Service">Microsoft SQL Server</td><td data-l="Note">—</td></tr>
+        <tr><th scope="row" class="mono">1521</th><td data-l="Protocol">TCP</td><td data-l="Service">Oracle</td><td data-l="Note">—</td></tr>
+        <tr><th scope="row" class="mono">3306</th><td data-l="Protocol">TCP</td><td data-l="Service">MySQL / Aurora MySQL</td><td data-l="Note">Common in security group questions.</td></tr>
+        <tr><th scope="row" class="mono">3389</th><td data-l="Protocol">TCP</td><td data-l="Service">RDP</td><td data-l="Note">Windows remote desktop.</td></tr>
+        <tr><th scope="row" class="mono">5432</th><td data-l="Protocol">TCP</td><td data-l="Service">PostgreSQL / Aurora PostgreSQL</td><td data-l="Note">Common in security group questions.</td></tr>
+        <tr><th scope="row" class="mono">6379</th><td data-l="Protocol">TCP</td><td data-l="Service">Redis</td><td data-l="Note">ElastiCache.</td></tr>
+        <tr><th scope="row" class="mono">11211</th><td data-l="Protocol">TCP</td><td data-l="Service">Memcached</td><td data-l="Note">ElastiCache.</td></tr>
+        <tr><th scope="row" class="mono">27017</th><td data-l="Protocol">TCP</td><td data-l="Service">MongoDB / DocumentDB</td><td data-l="Note">—</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="tw">
+    <table>
+      <caption>The three port ranges</caption>
+      <thead><tr><th scope="col">Range</th><th scope="col">Called</th><th scope="col">Meaning</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">0 – 1023</th><td data-l="Called">Well known</td><td data-l="Meaning">Standard services. Binding one needs root.</td></tr>
+        <tr><th scope="row" class="mono">1024 – 49151</th><td data-l="Called">Registered</td><td data-l="Meaning">Claimed by particular applications, like 3306 for MySQL.</td></tr>
+        <tr><th scope="row" class="mono">49152 – 65535</th><td data-l="Called">Ephemeral</td><td data-l="Meaning">Picked at random by the client for the return path. <strong>This range is why stateless NACLs need outbound rules.</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 06 -->
+<section id="s06" aria-labelledby="h06">
+  <h2 id="h06"><span class="n">06</span> DNS and HTTP</h2>
+  <p class="thesis">DNS turns a name into an address. HTTP is what you then say to it.</p>
+
+  <h3>DNS record types</h3>
+  <div class="tw">
+    <table>
+      <caption>Records you will meet</caption>
+      <thead><tr><th scope="col">Type</th><th scope="col">Maps</th><th scope="col">Note</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">A</th><td data-l="Maps">Name → IPv4</td><td data-l="Note">The common one.</td></tr>
+        <tr><th scope="row" class="mono">AAAA</th><td data-l="Maps">Name → IPv6</td><td data-l="Note">—</td></tr>
+        <tr><th scope="row" class="mono">CNAME</th><td data-l="Maps">Name → another name</td><td data-l="Note"><strong>Cannot be used at the zone apex</strong>, so not for <code>example.com</code> itself.</td></tr>
+        <tr><th scope="row" class="mono">MX</th><td data-l="Maps">Domain → mail server</td><td data-l="Note">—</td></tr>
+        <tr><th scope="row" class="mono">TXT</th><td data-l="Maps">Domain → free text</td><td data-l="Note">Domain verification, SPF.</td></tr>
+        <tr><th scope="row" class="mono">NS</th><td data-l="Maps">Zone → its nameservers</td><td data-l="Note">—</td></tr>
+        <tr><th scope="row" class="mono"><img class="ico-sm" src="icons/route53.svg" alt="">ALIAS</th><td data-l="Maps">Name → an AWS resource</td><td data-l="Note">Route 53 only. <strong>Works at the zone apex</strong>, and costs nothing to query.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> ALIAS versus CNAME shows up constantly</span>
+    <p>You cannot put a CNAME on the root of a domain. So when a question wants <code>example.com</code> (not <code>www.example.com</code>) pointed at a load balancer or CloudFront distribution, the answer is a Route 53 <strong>ALIAS</strong> record.</p>
+  </div>
+
+  <h3>HTTP status codes</h3>
+  <div class="tw">
+    <table>
+      <caption>By first digit</caption>
+      <thead><tr><th scope="col">Class</th><th scope="col">Means</th><th scope="col">Seen as</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">2xx</th><td data-l="Means">Worked</td><td data-l="Seen as">200 OK, 201 Created, 204 No Content</td></tr>
+        <tr><th scope="row" class="mono">3xx</th><td data-l="Means">Look elsewhere</td><td data-l="Seen as">301 Moved Permanently, 304 Not Modified</td></tr>
+        <tr><th scope="row" class="mono">4xx</th><td data-l="Means">Your request was wrong</td><td data-l="Seen as">400, 401 Unauthorized, 403 Forbidden, 404 Not Found, 429 Too Many Requests</td></tr>
+        <tr><th scope="row" class="mono">5xx</th><td data-l="Means">The server broke</td><td data-l="Seen as">500, 502 Bad Gateway, 503 Service Unavailable, 504 Gateway Timeout</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">On a load balancer, a spike in 5xx usually means the targets are unhealthy; a spike in 4xx usually means the clients are. That distinction is worth holding onto for the monitoring questions.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 07 -->
+<section id="s07" aria-labelledby="h07">
+  <h2 id="h07"><span class="n">07</span> Controlling access</h2>
+  <p class="thesis">Two firewalls at two different levels, behaving differently. Knowing which is which is worth several marks.</p>
+  <div class="tw">
+    <table>
+      <caption>Security group vs NACL</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Security group</th><th scope="col">Network ACL</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Attaches to</th><td data-l="Security group">An instance, strictly its network interface</td><td data-l="Network ACL">A whole subnet</td></tr>
+        <tr><th scope="row">State</th><td data-l="Security group"><strong>Stateful.</strong> Allow traffic out and the reply comes back automatically.</td><td data-l="Network ACL"><strong>Stateless.</strong> The reply needs its own rule.</td></tr>
+        <tr><th scope="row">Rule types</th><td data-l="Security group">Allow only. <strong>There is no deny.</strong></td><td data-l="Network ACL">Allow <em>and</em> deny</td></tr>
+        <tr><th scope="row">Evaluation</th><td data-l="Security group">All rules considered together; any match permits</td><td data-l="Network ACL">In rule-number order, lowest first, first match wins</td></tr>
+        <tr><th scope="row">Default</th><td data-l="Security group">Blocks all inbound, permits all outbound</td><td data-l="Network ACL">The default NACL permits everything both ways</td></tr>
+        <tr><th scope="row">Applies to</th><td data-l="Security group">Only the instances it is attached to</td><td data-l="Network ACL">Everything in the subnet, automatically</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call danger">
+    <span class="lbl"><span class="tag">Danger</span> Only a NACL can block</span>
+    <p>Security groups have no deny rule. So when a question describes <strong>one specific IP address attacking you</strong> and asks how to shut it out, a security group cannot express that. The answer is a NACL deny rule.</p>
+    <p>The flip side: because NACLs are stateless, allowing inbound 443 is not enough on its own. The reply leaves from an ephemeral port, so outbound <code>1024–65535</code> has to be allowed too, or the connection hangs.</p>
+  </div>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Security groups can reference each other</span>
+    <p>A rule's source can be another security group rather than an IP range. "Allow 3306 from the web-tier security group" keeps working as instances come and go, with no addresses to maintain. It is the idiomatic answer for tier-to-tier access.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 08 -->
+<section id="s08" aria-labelledby="h08">
+  <h2 id="h08"><span class="n">08</span> Routing and NAT</h2>
+  <p class="thesis">A subnet is public or private purely because of one line in a route table. Nothing else distinguishes them.</p>
+
+  <figure>
+    <div class="region">
+      <span class="rlabel">VPC · 10.0.0.0/16</span>
+      <div class="cols" style="margin:0">
+        <div class="subnetbox pub">
+          <span class="sn">Public subnet · 10.0.1.0/24</span>
+          <div><img src="icons/natgw.svg" alt="">NAT gateway, holding an Elastic IP</div>
+          <span class="rt">0.0.0.0/0 → <strong>internet gateway</strong></span>
+        </div>
+        <div class="subnetbox priv">
+          <span class="sn">Private subnet · 10.0.2.0/24</span>
+          <div><img src="icons/ec2.svg" alt="">Application and database instances</div>
+          <span class="rt">0.0.0.0/0 → <strong>NAT gateway</strong></span>
+        </div>
+      </div>
+      <p style="margin:12px 0 0;font-size:13.5px;color:var(--ink-2)">
+        <img class="ico-sm" src="icons/igw.svg" alt="">Internet gateway attached to the VPC &nbsp;·&nbsp;
+        <img class="ico-sm" src="icons/router.svg" alt="">VPC router at <code>10.0.0.1</code>
+      </p>
+    </div>
+    <figcaption>The private subnet can start outbound connections (package updates, external APIs) because its default route points at the NAT gateway. Nothing on the internet can start a connection <em>to</em> it, because there is no path inward. That asymmetry is the entire point.</figcaption>
+  </figure>
+
+  <div class="tw">
+    <table>
+      <caption>Route table entries</caption>
+      <thead><tr><th scope="col">Destination</th><th scope="col">Target</th><th scope="col">Effect</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">10.0.0.0/16</th><td data-l="Target" class="mono">local</td><td data-l="Effect">Always present, cannot be deleted. Lets everything in the VPC reach everything else.</td></tr>
+        <tr><th scope="row" class="mono">0.0.0.0/0</th><td data-l="Target" class="mono">igw-…</td><td data-l="Effect"><strong>Makes the subnet public.</strong> Two-way internet, for instances that also hold a public or Elastic IP.</td></tr>
+        <tr><th scope="row" class="mono">0.0.0.0/0</th><td data-l="Target" class="mono">nat-…</td><td data-l="Effect"><strong>Makes the subnet private.</strong> Outbound only.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>Gateway against gateway</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Internet gateway</th><th scope="col">NAT gateway</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Attaches to</th><td data-l="Internet gateway">The VPC. One per VPC.</td><td data-l="NAT gateway">A subnet — and it must be a <strong>public</strong> one.</td></tr>
+        <tr><th scope="row">Direction</th><td data-l="Internet gateway">Both ways</td><td data-l="NAT gateway">Outbound only</td></tr>
+        <tr><th scope="row">Needs</th><td data-l="Internet gateway">Instances to have their own public IP</td><td data-l="NAT gateway">Its own Elastic IP</td></tr>
+        <tr><th scope="row">Cost</th><td data-l="Internet gateway">Free</td><td data-l="NAT gateway">Hourly charge <em>plus</em> per GB processed</td></tr>
+        <tr><th scope="row">Availability</th><td data-l="Internet gateway">Region-wide, managed</td><td data-l="NAT gateway">Lives in one AZ. For resilience you need one per AZ.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> NAT gateways are a cost-question favourite</span>
+    <p>They are billed per hour <em>and</em> per gigabyte, so a chatty private subnet gets expensive quietly. When a cost-optimisation question involves private instances pulling large amounts of data from S3, the answer is usually a <strong>VPC gateway endpoint</strong>, which routes that traffic privately and skips the NAT gateway entirely.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 09 -->
+<section id="s09" aria-labelledby="h09">
+  <h2 id="h09"><span class="n">09</span> Virtualization</h2>
+  <p class="thesis">One physical machine presented as many. A hypervisor is what does the presenting, and there are two architectures.</p>
+
+  <figure>
+    <div class="cols">
+      <div class="card">
+        <h3><span class="w">Type 1</span> Bare metal</h3>
+        <div class="stack">
+          <div>Guest OS</div>
+          <div class="arrow">↓</div>
+          <div class="hi">Hypervisor · Ring 0</div>
+          <div class="arrow">↓</div>
+          <div class="hw">CPU and hardware</div>
+        </div>
+      </div>
+      <div class="card">
+        <h3><span class="w">Type 2</span> Hosted</h3>
+        <div class="stack">
+          <div>Guest OS</div>
+          <div class="arrow">↓</div>
+          <div class="hi">Hypervisor · mostly Ring 3</div>
+          <div class="arrow">↓</div>
+          <div>Host OS kernel · Ring 0</div>
+          <div class="arrow">↓</div>
+          <div class="hw">CPU and hardware</div>
+        </div>
+      </div>
+    </div>
+    <figcaption>The extra box in the right-hand stack is the whole difference. Every privileged instruction from a guest has to be translated into a request the host operating system understands, and then wait its turn among everything else that machine is doing.</figcaption>
+  </figure>
+
+  <h3>Type 1: direct Ring 0 control</h3>
+  <p>A bare-metal hypervisor <em>is</em> the operating system core, stripped down to do only one thing: schedule CPU cycles and map memory. It boots first and installs itself directly into the CPU's <strong>Ring 0</strong>, the most privileged level.</p>
+  <p>When a virtual machine tries to write to a disk or read memory, it executes a privileged instruction. The physical CPU catches this and triggers a <strong>VM-Exit</strong>. Because the Type 1 hypervisor sits at the lowest software layer, its own kernel logic catches that event instantly and uses native micro-drivers compiled into its kernel to run the command on real hardware, with nothing in between.</p>
+
+  <h3>Type 2: translation through a host</h3>
+  <p>A hosted hypervisor lives inside an ordinary operating system, so it is bound by that host's rules and scheduling. The <strong>host OS owns Ring 0</strong>. The hypervisor itself runs mostly in <strong>Ring 3</strong> (user mode, where Chrome lives) and reaches privileged operations through a loaded kernel driver.</p>
+  <p>It cannot execute hardware instructions directly, so it must translate each one into a <strong>system call</strong>. Asked to write to a virtual disk, it effectively tells the host: <em>"please write this block to <code>C:\Users\VMs\ubuntu.vmdk</code> using NTFS."</em> The host's scheduler then decides when to get round to it, alongside every other process on the machine.</p>
+
+  <div class="tw">
+    <table>
+      <caption>Which is which</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Type 1</th><th scope="col">Type 2</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Runs on</th><td data-l="Type 1">The hardware itself</td><td data-l="Type 2">On top of an existing OS</td></tr>
+        <tr><th scope="row">Owns Ring 0</th><td data-l="Type 1">Yes</td><td data-l="Type 2">No — the host does</td></tr>
+        <tr><th scope="row">Hardware access</th><td data-l="Type 1">Direct, via its own drivers</td><td data-l="Type 2">Translated into host system calls</td></tr>
+        <tr><th scope="row">Performance</th><td data-l="Type 1">Near native</td><td data-l="Type 2">Noticeably slower</td></tr>
+        <tr><th scope="row">Examples</th><td data-l="Type 1">AWS Nitro, VMware ESXi, Xen, KVM, Hyper-V</td><td data-l="Type 2">VirtualBox, VMware Workstation, Parallels</td></tr>
+        <tr><th scope="row">Used for</th><td data-l="Type 1">Data centres and clouds</td><td data-l="Type 2">Running another OS on your laptop</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Your EC2 instance is on a Type 1</span>
+    <p>Modern EC2 runs on the <strong>AWS Nitro</strong> hypervisor, which is Type 1 and offloads networking and storage onto dedicated hardware cards. That is why an instance can reach close to bare-metal performance, and it is the reason "virtualization" appears on the provider's side of the responsibility line for IaaS.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 10 -->
+<section id="s10" aria-labelledby="h10">
+  <h2 id="h10"><span class="n">10</span> Linux and its distributions</h2>
+  <p class="thesis">Almost every server you will touch runs Linux, and the exam quietly assumes you can find your way around one.</p>
+
+  <div class="tw">
+    <table>
+      <caption>Distributions you will meet</caption>
+      <thead><tr><th scope="col">Distribution</th><th scope="col">Family</th><th scope="col">Package manager</th><th scope="col">Default login on EC2</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Amazon Linux 2023</th><td data-l="Family">Red Hat</td><td data-l="Package manager" class="mono">dnf</td><td data-l="Default login" class="mono">ec2-user</td></tr>
+        <tr><th scope="row">Ubuntu</th><td data-l="Family">Debian</td><td data-l="Package manager" class="mono">apt</td><td data-l="Default login" class="mono">ubuntu</td></tr>
+        <tr><th scope="row">Red Hat Enterprise Linux</th><td data-l="Family">Red Hat</td><td data-l="Package manager" class="mono">dnf</td><td data-l="Default login" class="mono">ec2-user</td></tr>
+        <tr><th scope="row">Debian</th><td data-l="Family">Debian</td><td data-l="Package manager" class="mono">apt</td><td data-l="Default login" class="mono">admin</td></tr>
+        <tr><th scope="row">SUSE Linux Enterprise</th><td data-l="Family">SUSE</td><td data-l="Package manager" class="mono">zypper</td><td data-l="Default login" class="mono">ec2-user</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">Using the wrong username is the most common reason a first SSH attempt fails. The error looks like a key problem and is not.</p>
+
+  <h3>Why the cloud runs on Linux</h3>
+  <ul class="tick">
+    <li><strong>No per-instance licence.</strong> Autoscaling from 3 to 300 machines costs nothing extra in licensing.</li>
+    <li><strong>Small.</strong> A server image with no desktop boots in seconds and leaves the RAM to your application.</li>
+    <li><strong>Scriptable end to end.</strong> Anything you can do by hand you can put in a startup script, which is what makes an auto scaling group possible at all.</li>
+    <li><strong>Built for remote administration.</strong> SSH is the normal way in, not a fallback.</li>
+    <li><strong>It is what the software targets.</strong> Nearly every database, web server and runtime is developed on Linux first.</li>
+  </ul>
+
+  <h3>The filesystem</h3>
+  <p>One tree from <code>/</code>. No drive letters; additional disks are <em>mounted</em> at a directory somewhere in that tree.</p>
+  <div class="tw">
+    <table>
+      <caption>Directories that matter</caption>
+      <thead><tr><th scope="col">Path</th><th scope="col">Holds</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">/</th><td data-l="Holds">The root of everything.</td></tr>
+        <tr><th scope="row" class="mono">/home</th><td data-l="Holds">User directories. <code>/home/ec2-user</code> is where you land.</td></tr>
+        <tr><th scope="row" class="mono">/etc</th><td data-l="Holds">Configuration. Text files, all of it.</td></tr>
+        <tr><th scope="row" class="mono">/var</th><td data-l="Holds">Data that changes, above all <code>/var/log</code>.</td></tr>
+        <tr><th scope="row" class="mono">/tmp</th><td data-l="Holds">Scratch space, wiped on reboot.</td></tr>
+        <tr><th scope="row" class="mono">/usr</th><td data-l="Holds">Installed programs and their files.</td></tr>
+        <tr><th scope="row" class="mono">/bin</th><td data-l="Holds">Essential commands.</td></tr>
+        <tr><th scope="row" class="mono">/dev</th><td data-l="Holds">Devices as files. An attached EBS volume shows up here.</td></tr>
+        <tr><th scope="row" class="mono">/proc</th><td data-l="Holds">The running kernel, presented as files.</td></tr>
+        <tr><th scope="row" class="mono">/mnt</th><td data-l="Holds">Where you mount extra filesystems.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 11 -->
+<section id="s11" aria-labelledby="h11">
+  <h2 id="h11"><span class="n">11</span> File permissions</h2>
+  <p class="thesis">Linux is multi-user, so every file records what three different classes of person may do to it.</p>
+
+  <p>Three classes (<strong>owner</strong>, <strong>group</strong>, <strong>others</strong>), each with three permissions: read, write, execute. Nine bits in total, which is why <code>ls -l</code> shows nine characters.</p>
+
+  <figure>
+    <div class="perm">
+      <div><span class="who">Owner</span><span class="rwx">rwx</span><span class="num">4+2+1 = 7</span><span class="sum">read, write, execute</span></div>
+      <div><span class="who">Group</span><span class="rwx">r-x</span><span class="num">4+0+1 = 5</span><span class="sum">read and execute</span></div>
+      <div><span class="who">Others</span><span class="rwx">r-x</span><span class="num">4+0+1 = 5</span><span class="sum">read and execute</span></div>
+    </div>
+    <figcaption><code>-rwxr-xr-x</code> is <code>755</code>. Each digit is one class; each is the sum of <strong>read 4</strong>, <strong>write 2</strong>, <strong>execute 1</strong>. The leading dash is the file type — <code>d</code> for a directory, <code>l</code> for a symbolic link.</figcaption>
+  </figure>
+
+  <div class="tw">
+    <table>
+      <caption>The eight digits</caption>
+      <thead><tr><th scope="col">Octal</th><th scope="col">Binary</th><th scope="col">Symbolic</th><th scope="col">Means</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">7</th><td data-l="Binary" class="mono">111</td><td data-l="Symbolic" class="mono">rwx</td><td data-l="Means">Everything</td></tr>
+        <tr><th scope="row" class="mono">6</th><td data-l="Binary" class="mono">110</td><td data-l="Symbolic" class="mono">rw-</td><td data-l="Means">Read and write</td></tr>
+        <tr><th scope="row" class="mono">5</th><td data-l="Binary" class="mono">101</td><td data-l="Symbolic" class="mono">r-x</td><td data-l="Means">Read and execute</td></tr>
+        <tr><th scope="row" class="mono">4</th><td data-l="Binary" class="mono">100</td><td data-l="Symbolic" class="mono">r--</td><td data-l="Means">Read only</td></tr>
+        <tr><th scope="row" class="mono">3</th><td data-l="Binary" class="mono">011</td><td data-l="Symbolic" class="mono">-wx</td><td data-l="Means">Write and execute</td></tr>
+        <tr><th scope="row" class="mono">2</th><td data-l="Binary" class="mono">010</td><td data-l="Symbolic" class="mono">-w-</td><td data-l="Means">Write only</td></tr>
+        <tr><th scope="row" class="mono">1</th><td data-l="Binary" class="mono">001</td><td data-l="Symbolic" class="mono">--x</td><td data-l="Means">Execute only</td></tr>
+        <tr><th scope="row" class="mono">0</th><td data-l="Binary" class="mono">000</td><td data-l="Symbolic" class="mono">---</td><td data-l="Means">Nothing</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>Combinations in daily use</caption>
+      <thead><tr><th scope="col">Mode</th><th scope="col">Symbolic</th><th scope="col">Used for</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">755</th><td data-l="Symbolic" class="mono">rwxr-xr-x</td><td data-l="Used for">Scripts and directories. Owner edits, everyone runs.</td></tr>
+        <tr><th scope="row" class="mono">644</th><td data-l="Symbolic" class="mono">rw-r--r--</td><td data-l="Used for">Ordinary files. Owner edits, everyone reads.</td></tr>
+        <tr><th scope="row" class="mono">600</th><td data-l="Symbolic" class="mono">rw-------</td><td data-l="Used for">Private files. Only the owner, at all.</td></tr>
+        <tr><th scope="row" class="mono">400</th><td data-l="Symbolic" class="mono">r--------</td><td data-l="Used for"><strong>SSH private keys.</strong> Read-only, owner only.</td></tr>
+        <tr><th scope="row" class="mono">777</th><td data-l="Symbolic" class="mono">rwxrwxrwx</td><td data-l="Used for">Everyone can do anything. <strong>Almost always a mistake.</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="call danger">
+    <span class="lbl"><span class="tag">Danger</span> The <code>.pem</code> file trap</span>
+    <p>Download a key pair from AWS and it arrives world-readable. SSH refuses to use a key anyone else can read, and the error, <em>"Permissions 0644 for 'key.pem' are too open"</em>, reads like the key is broken. It is not.</p>
+    <p>The fix is one command: <code>chmod 400 key.pem</code>. This is the single most common first-connection failure on EC2, and it is worth committing to memory now rather than at 2am.</p>
+  </div>
+
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Changing them</span>
+    <p><code>chmod</code> changes permissions, numerically (<code>chmod 755 file</code>) or symbolically (<code>chmod u+x file</code> to add execute for the owner, <code>chmod go-w file</code> to remove write from group and others). <code>chown user:group file</code> changes who owns it, and needs <code>sudo</code>.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 12 -->
+<section id="s12" aria-labelledby="h12">
+  <h2 id="h12"><span class="n">12</span> Commands worth knowing</h2>
+  <p class="thesis">Grouped by what you are trying to do, rather than as a list to recite.</p>
+
+  <div class="cols three">
+    <div class="card">
+      <h3>Moving around</h3>
+      <dl class="svc">
+        <dt>pwd</dt><dd>Where am I.</dd>
+        <dt>ls -lah</dt><dd>List, long form, all files, human-readable sizes.</dd>
+        <dt>cd</dt><dd>Change directory. Bare <code>cd</code> goes home.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Reading files</h3>
+      <dl class="svc">
+        <dt>cat</dt><dd>Dump a whole file.</dd>
+        <dt>less</dt><dd>Page through a big one. <code>q</code> quits.</dd>
+        <dt>head / tail</dt><dd>First or last lines. <code>tail -f</code> follows a log live.</dd>
+        <dt>wc -l</dt><dd>Count lines.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Changing files</h3>
+      <dl class="svc">
+        <dt>touch</dt><dd>Create an empty file.</dd>
+        <dt>cp / mv</dt><dd>Copy, move or rename.</dd>
+        <dt>rm -r</dt><dd>Delete, recursively. No undo.</dd>
+        <dt>mkdir -p</dt><dd>Create a directory and any parents.</dd>
+        <dt>nano / vim</dt><dd>Edit in the terminal.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Finding things</h3>
+      <dl class="svc">
+        <dt>grep -r</dt><dd>Search inside files.</dd>
+        <dt>find</dt><dd>Search for files by name, age or size.</dd>
+        <dt>which</dt><dd>Where a command lives.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Permissions and users</h3>
+      <dl class="svc">
+        <dt>chmod / chown</dt><dd>Change mode, change owner.</dd>
+        <dt>whoami / id</dt><dd>Who am I, and in which groups.</dd>
+        <dt>sudo</dt><dd>Run one command as root.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Processes</h3>
+      <dl class="svc">
+        <dt>ps aux</dt><dd>Every running process.</dd>
+        <dt>top</dt><dd>Live CPU and memory.</dd>
+        <dt>kill / kill -9</dt><dd>Ask a process to stop, then insist.</dd>
+        <dt>systemctl</dt><dd>Start, stop and enable services.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Disk</h3>
+      <dl class="svc">
+        <dt>df -h</dt><dd>Free space per filesystem.</dd>
+        <dt>du -sh *</dt><dd>What is using the space here.</dd>
+        <dt>lsblk</dt><dd>Attached block devices — your EBS volumes.</dd>
+        <dt>mount</dt><dd>Attach a filesystem to the tree.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Network</h3>
+      <dl class="svc">
+        <dt>curl</dt><dd>Make an HTTP request. Used in the lab.</dd>
+        <dt>ping</dt><dd>Is it reachable. Note ICMP must be allowed.</dd>
+        <dt>ss -tulpn</dt><dd>What is listening on which port.</dd>
+        <dt>dig</dt><dd>Query DNS directly.</dd>
+        <dt>ip a</dt><dd>Interfaces and their addresses.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>System and packages</h3>
+      <dl class="svc">
+        <dt>uname -a</dt><dd>Kernel and architecture.</dd>
+        <dt>hostname</dt><dd>The internal DNS name.</dd>
+        <dt>free -h</dt><dd>Memory in use.</dd>
+        <dt>history</dt><dd>Everything typed this session.</dd>
+        <dt>dnf / apt</dt><dd>Install software. Which one depends on the distribution.</dd>
+      </dl>
+    </div>
+  </div>
+
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Three that carry most of the weight</span>
+    <p><code>tail -f /var/log/…</code> to watch something fail in real time, <code>ss -tulpn</code> to prove whether a service is actually listening, and <code>df -h</code> when something inexplicable starts breaking — a full disk causes stranger symptoms than almost anything else.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+</main>
+
+<footer id="sources">
+  <h2>Sources</h2>
+  <p>Class outline expanded and checked against AWS documentation. Verified 10 September 2026.</p>
+  <ol>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/subnet-sizing.html">AWS — Subnet CIDR blocks</a> (the five reserved addresses, /28 to /16 limits)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/default-vpc-components.html">AWS — Default VPC components</a> (172.31.0.0/16)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html">AWS — Security groups</a> (stateful, allow-only)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html">AWS — Network ACLs</a> (stateless, rule ordering)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html">AWS — NAT gateways</a></li>
+    <li><a href="https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/managing-users.html">AWS — Default users on EC2 Linux</a></li>
+    <li><a href="https://datatracker.ietf.org/doc/html/rfc1918">RFC 1918</a> (private address ranges)</li>
+  </ol>
+  <p class="disc">Personal study notes. The hypervisor section follows the class notes closely; the rest expands the class outline. Service icons are the official AWS Architecture Icons, used unmodified. Not affiliated with or endorsed by Amazon Web Services.</p>
+</footer>
+
+</div>
+</body>
+</html>
