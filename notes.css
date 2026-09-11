@@ -521,3 +521,43 @@ li.soon .placeholder{
   background:var(--sunk);border-bottom:1px dashed var(--line);
   font:600 12.5px/1.5 var(--mono);color:var(--ink-3);letter-spacing:.04em
 }
+
+/* ============================================================
+   Components added for Day 03
+   ============================================================ */
+
+/* JSON / code block (distinct from .term transcripts) */
+.code{
+  background:var(--sunk);border:1px solid var(--line);border-radius:9px;
+  padding:15px 17px;margin:0 0 8px;overflow-x:auto;white-space:pre;
+  font:13px/1.7 var(--mono);color:var(--ink-2);tab-size:2
+}
+.code b{color:var(--accent);font-weight:700}
+.code i{color:var(--good);font-style:normal}
+.code u{color:var(--ink-3);text-decoration:none}
+
+/* decision flow */
+.flow{display:flex;flex-direction:column;gap:0;margin:0;align-items:stretch}
+.flow .step,.flow .test,.flow .end{
+  border-radius:8px;padding:11px 14px;text-align:center;
+  font:600 13.5px/1.45 var(--sans);border:1px solid
+}
+.flow .step{background:var(--panel);border-color:var(--line-2);color:var(--ink)}
+.flow .test{background:var(--sunk);border-color:var(--line-2);color:var(--ink);font-weight:650}
+.flow .end.deny{background:var(--danger-soft);border-color:var(--danger-line);color:var(--danger);font-weight:700}
+.flow .end.allow{background:var(--good-soft);border-color:var(--good-line);color:var(--good);font-weight:700}
+.flow .branch{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+.flow .lbl2{
+  font:700 11px/1.5 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-3);text-align:center;padding:6px 0 4px
+}
+.flow .down{text-align:center;color:var(--ink-3);font-size:15px;line-height:1.7}
+
+/* CAF perspective cards */
+.persp{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:0}
+@media(max-width:800px){.persp{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:520px){.persp{grid-template-columns:1fr}}
+.persp>div{border:1px solid var(--line);border-radius:9px;padding:14px 15px;background:var(--panel)}
+.persp .pt{font-size:15px;font-weight:650;color:var(--ink);display:block;margin-bottom:4px}
+.persp .pw{font:600 11px/1.5 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
+.persp .pb{font-size:13.5px;line-height:1.5;color:var(--ink-2);margin:0}

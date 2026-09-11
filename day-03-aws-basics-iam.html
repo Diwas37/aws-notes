@@ -1,0 +1,521 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Day 03 — AWS Basics and IAM | AWS SAA-C03</title>
+<link rel="stylesheet" href="notes.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+<header class="top" id="top">
+  <h1>AWS Basics and IAM</h1>
+  <p class="sub">How AWS is laid out, the three ways to drive it, and then the first real service: who is allowed to do what, and how AWS decides.</p>
+  <div class="meta">
+    <span class="chip on">Day 03 · AWS Basics</span>
+    <span class="chip">Cloud Adoption Framework</span>
+    <span class="chip">Console, CLI, SDK</span>
+    <span class="chip">IAM</span>
+    <span class="chip">Policies</span>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="now">
+  <h2>What to remember</h2>
+  <p class="lede">IAM is the largest single topic in Domain 1, which is itself 30% of the exam. These five are the ones that decide questions.</p>
+  <ol>
+    <li><b>Explicit deny always wins.</b> One deny anywhere in any applicable policy sinks the whole request, no matter how many allows exist. <a href="#s09">→ 09</a></li>
+    <li><b>Everything is denied by default.</b> No matching allow means implicit deny, so a permission has to be granted somewhere before it exists at all. <a href="#s09">→ 09</a></li>
+    <li><b>Roles are assumed, not logged into.</b> They hand out temporary credentials and have no password or access key. This is the right answer whenever something needs access to something else. <a href="#s07">→ 07</a></li>
+    <li><b>IAM is global.</b> Users, groups, roles and policies are not per-Region. <a href="#s05">→ 05</a></li>
+    <li><b>The root user is for a short list of tasks and nothing else.</b> Secure it, then leave it alone. <a href="#s10">→ 10</a></li>
+  </ol>
+</div>
+
+<nav class="toc" aria-labelledby="toc-h">
+  <h2 id="toc-h">On this page</h2>
+  <ol>
+    <li><a href="#s01"><span class="n">01</span> Regions, zones and edges</a></li>
+    <li><a href="#s02"><span class="n">02</span> The Cloud Adoption Framework</a></li>
+    <li><a href="#s03"><span class="n">03</span> The service catalogue</a></li>
+    <li><a href="#s04"><span class="n">04</span> Three ways to talk to AWS</a></li>
+    <li><a href="#s05"><span class="n">05</span> What IAM is</a></li>
+    <li><a href="#s06"><span class="n">06</span> The vocabulary</a></li>
+    <li><a href="#s07"><span class="n">07</span> Users, groups and roles</a></li>
+    <li><a href="#s08"><span class="n">08</span> Policies</a></li>
+    <li><a href="#s09"><span class="n">09</span> How a request is decided</a></li>
+    <li><a href="#s10"><span class="n">10</span> Securing the account</a></li>
+  </ol>
+</nav>
+
+<!-- 01 -->
+<section id="s01" aria-labelledby="h01">
+  <h2 id="h01"><span class="n">01</span> Regions, zones and edges</h2>
+  <p class="thesis">Three levels of geography, and choosing between them is a real architectural decision.</p>
+  <div class="tw">
+    <table>
+      <caption>The three levels</caption>
+      <thead><tr><th scope="col">Level</th><th scope="col">What it is</th><th scope="col">Chosen for</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Region</th><td data-l="What it is">A geographic area such as <span class="mono">us-east-2</span> (Ohio). Contains at least three Availability Zones.</td><td data-l="Chosen for">Latency to users, data-residency law, service availability, and price — which differs by Region.</td></tr>
+        <tr><th scope="row">Availability Zone</th><td data-l="What it is">One or more discrete data centres inside a Region, with independent power, cooling and networking.</td><td data-l="Chosen for">Surviving a failure. Run across at least two.</td></tr>
+        <tr><th scope="row">Edge location</th><td data-l="What it is">A much larger set of smaller sites used for caching and DNS, not for running your servers.</td><td data-l="Chosen for">Getting content physically close to users. CloudFront and Route 53 live here.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Four things to weigh when picking a Region</span>
+    <p><strong>Compliance</strong> first, because it can be non-negotiable — some data legally cannot leave a country. Then <strong>latency</strong> to your users, then <strong>price</strong>, then <strong>service availability</strong>, since new services do not launch everywhere at once.</p>
+  </div>
+  <p class="fine">Covered in more depth on <a href="day-02-cloud-basics.html#s08">Day 02, section 08</a>.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 02 -->
+<section id="s02" aria-labelledby="h02">
+  <h2 id="h02"><span class="n">02</span> The Cloud Adoption Framework</h2>
+  <p class="thesis">AWS's checklist for moving an organisation to the cloud. It is about people and process, not architecture.</p>
+
+  <p>The point of the CAF is that the technical migration is the easy half. It groups the work into <strong>six perspectives</strong>, each owned by a different group of people.</p>
+
+  <figure>
+    <div class="persp">
+      <div><span class="pw">Business</span><span class="pt">Does it pay off</span><p class="pb">Making sure cloud spending actually produces business results worth having.</p></div>
+      <div><span class="pw">People</span><span class="pt">Can the staff do it</span><p class="pb">Skills, training and culture. The bridge between the technology and the business.</p></div>
+      <div><span class="pw">Governance</span><span class="pt">Is it under control</span><p class="pb">Managing risk, measuring value, keeping the spend accountable.</p></div>
+      <div><span class="pw">Platform</span><span class="pt">Is it built well</span><p class="pb">The architecture itself: building and modernising the workloads.</p></div>
+      <div><span class="pw">Security</span><span class="pt">Is it safe</span><p class="pb">Confidentiality, integrity and availability of data and systems.</p></div>
+      <div><span class="pw">Operations</span><span class="pt">Does it keep running</span><p class="pb">Delivering the service at the level the business agreed to.</p></div>
+    </div>
+    <figcaption>Business, People and Governance are the <strong>non-technical</strong> half; Platform, Security and Operations are the technical half. That split is the framework's actual argument — half of a cloud migration is not an engineering problem.</figcaption>
+  </figure>
+
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> This one was missed in class</span>
+    <p>The class notes record CAF as missed, so this section is written from <a href="https://aws.amazon.com/cloud-adoption-framework/">AWS's own framework page</a> rather than from the lecture. For SAA-C03 the CAF is background: know the six perspective names and that the framework exists. It is examined far more heavily on the Cloud Practitioner paper.</p>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Do not confuse it with Well-Architected</span>
+    <p>Two different frameworks. <strong>CAF</strong> is about <em>adopting</em> the cloud as an organisation — people, governance, process. <strong>Well-Architected</strong> is about <em>designing a workload</em>, and its six pillars are what SAA-C03 is actually built on.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 03 -->
+<section id="s03" aria-labelledby="h03">
+  <h2 id="h03"><span class="n">03</span> The service catalogue</h2>
+  <p class="thesis">Two hundred-odd services, but they sort into a handful of categories. Recognising the category is usually enough to eliminate two wrong answers.</p>
+
+  <div class="cols three">
+    <div class="card">
+      <h3>Compute <span class="dom">run code</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/ec2.svg" alt="">EC2</dt><dd>Virtual machines you manage.</dd>
+        <dt><img class="ico" src="icons/lambda.svg" alt="">Lambda</dt><dd>Functions, no server to manage.</dd>
+        <dt><img class="ico" src="icons/fargate.svg" alt="">Fargate</dt><dd>Containers without managing the hosts under them.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Storage <span class="dom">keep files</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/s3.svg" alt="">S3</dt><dd>Object storage. Flat keys over HTTP.</dd>
+        <dt><img class="ico" src="icons/ebs.svg" alt="">EBS</dt><dd>A disk for one instance. Block storage.</dd>
+        <dt><img class="ico" src="icons/efs.svg" alt="">EFS</dt><dd>A shared file system many instances mount.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Database <span class="dom">query data</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/rds.svg" alt="">RDS</dt><dd>Managed relational engines.</dd>
+        <dt><img class="ico" src="icons/aurora.svg" alt="">Aurora</dt><dd>AWS's own relational engine.</dd>
+        <dt><img class="ico" src="icons/dynamodb.svg" alt="">DynamoDB</dt><dd>Managed NoSQL, at any scale.</dd>
+        <dt><img class="ico" src="icons/redshift.svg" alt="">Redshift</dt><dd>Data warehouse, for analytics not transactions.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Networking <span class="dom">connect it</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/vpc.svg" alt="">VPC</dt><dd>Your private network.</dd>
+        <dt><img class="ico" src="icons/route53.svg" alt="">Route 53</dt><dd>DNS with health checks.</dd>
+        <dt><img class="ico" src="icons/cloudfront.svg" alt="">CloudFront</dt><dd>CDN at the edge locations.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Security <span class="dom">control access</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/iam.svg" alt="">IAM</dt><dd>Who can do what. The rest of this page.</dd>
+        <dt><img class="ico" src="icons/kms.svg" alt="">KMS</dt><dd>Encryption keys.</dd>
+      </dl>
+    </div>
+    <div class="card">
+      <h3>Management <span class="dom">watch and govern</span></h3>
+      <dl class="svc">
+        <dt><img class="ico" src="icons/cloudwatch.svg" alt="">CloudWatch</dt><dd>Metrics, logs, alarms.</dd>
+        <dt><img class="ico" src="icons/cloudtrail.svg" alt="">CloudTrail</dt><dd>Who called which API, and when.</dd>
+        <dt><img class="ico" src="icons/cloudformation.svg" alt="">CloudFormation</dt><dd>Infrastructure described as a template.</dd>
+      </dl>
+    </div>
+  </div>
+  <p class="fine">The full 25-service roadmap for this course is on <a href="day-02-cloud-basics.html#s09">Day 02, section 09</a>.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 04 -->
+<section id="s04" aria-labelledby="h04">
+  <h2 id="h04"><span class="n">04</span> Three ways to talk to AWS</h2>
+  <p class="thesis">All three hit the same API. The Console is just a website that makes the calls for you.</p>
+  <div class="cols three">
+    <div class="card">
+      <h3><span class="w">Point and click</span> Management Console</h3>
+      <ul>
+        <li>A web interface, per-Region in most services</li>
+        <li>Best for learning, exploring and one-off tasks</li>
+        <li>Not repeatable, and leaves no record of intent</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Type commands</span> CLI</h3>
+      <ul>
+        <li><span class="mono">aws s3 ls</span>, and several thousand others</li>
+        <li>Scriptable, so it can go in automation</li>
+        <li>Needs credentials configured, usually an access key or a role</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">From code</span> SDKs</h3>
+      <ul>
+        <li>Libraries for Python (boto3), JavaScript, Java, Go and more</li>
+        <li>How an application talks to AWS from inside itself</li>
+        <li>Picks up credentials the same way the CLI does</li>
+      </ul>
+    </div>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> The Console is not special</span>
+    <p>Every click makes the same API call the CLI would. This matters for two reasons: <strong>CloudTrail records all of it identically</strong>, and an IAM policy that denies an action denies it in the Console too. There is no back door through the web interface.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 05 -->
+<section id="s05" aria-labelledby="h05">
+  <h2 id="h05"><span class="n">05</span> What IAM is</h2>
+  <p class="thesis">Identity and Access Management controls who can do what to which resource. It is free, and it is global.</p>
+
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Global, not regional</span>
+    <p>Users, groups, roles and policies are <strong>not tied to a Region</strong>. Create a user once and it exists everywhere. This is unusual — most services are regional — and the exam likes testing it.</p>
+  </div>
+
+  <h3>Authentication is not authorization</h3>
+  <p>Two separate steps that happen in order, and mixing them up makes policy behaviour impossible to reason about.</p>
+  <div class="tw">
+    <table>
+      <caption>The two steps</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Authentication</th><th scope="col">Authorization</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Question</th><td data-l="Authentication">Who are you?</td><td data-l="Authorization">What are you allowed to do?</td></tr>
+        <tr><th scope="row">Definition</th><td data-l="Authentication">Verifying an identity before granting access to a system, account or file.</td><td data-l="Authorization">Verifying the level of access that identity has.</td></tr>
+        <tr><th scope="row">Purpose</th><td data-l="Authentication">Confirm the identity and keep out impostors.</td><td data-l="Authorization">Make sure people reach only what they should.</td></tr>
+        <tr><th scope="row">Process</th><td data-l="Authentication">Compare supplied credentials against stored ones.</td><td data-l="Authorization">Grant or deny based on policies attached to the identity.</td></tr>
+        <tr><th scope="row">Methods</th><td data-l="Authentication">Password, access key, MFA code</td><td data-l="Authorization">IAM policies</td></tr>
+        <tr><th scope="row">Fails as</th><td data-l="Authentication">Cannot sign in at all</td><td data-l="Authorization">Signed in, but <span class="mono">AccessDenied</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">A useful test: an <span class="mono">AccessDenied</span> error means authentication already <em>succeeded</em>. AWS knows exactly who you are; it has decided you may not do this.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 06 -->
+<section id="s06" aria-labelledby="h06">
+  <h2 id="h06"><span class="n">06</span> The vocabulary</h2>
+  <p class="thesis">Four words AWS uses precisely and most material uses loosely. Worth ten minutes now to save confusion later.</p>
+
+  <div class="tw">
+    <table>
+      <caption>Four terms</caption>
+      <thead><tr><th scope="col">Term</th><th scope="col">Means</th><th scope="col">Examples</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Resource</th><td data-l="Means">An <strong>object stored in a service</strong>, the thing being acted upon.</td><td data-l="Examples">An S3 bucket, an EC2 instance, and also an IAM user — users are resources too.</td></tr>
+        <tr><th scope="row">Identity</th><td data-l="Means">The parts of IAM that can be <strong>given permissions</strong> and be identified.</td><td data-l="Examples">Users, groups, roles.</td></tr>
+        <tr><th scope="row">Entity</th><td data-l="Means">The parts AWS uses <strong>to authenticate with</strong> — the things that can actually sign in or be assumed.</td><td data-l="Examples">Users and roles. <strong>Not groups</strong>, because a group cannot authenticate.</td></tr>
+        <tr><th scope="row">Principal</th><td data-l="Means">The <strong>person or application making the request</strong>, using an entity.</td><td data-l="Examples">A human signed in as a user, an application that assumed a role, the root user.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> The distinction in one sentence</span>
+    <p>A <strong>group is an identity but not an entity</strong> — you can attach permissions to it, but nobody can log in as it. Everything else in IAM is both. That single exception is the whole reason AWS bothers to keep the two words apart.</p>
+    <p>And <strong>principal</strong> is not a fourth kind of object at all. It is the <em>role being played</em> in a particular request: whoever is making this call, right now, through some entity.</p>
+  </div>
+
+  <h3>Federation</h3>
+  <p>The class notes have "federated something?" with a question mark, so: <strong>federation means trusting an outside identity provider</strong> rather than creating IAM users.</p>
+  <p>Your staff already have accounts somewhere — Google Workspace, Microsoft Entra, Okta, an on-premises Active Directory. Federation lets them sign in there, and AWS accepts that provider's word for who they are, handing back temporary credentials. No second password, no IAM user to create and later forget to delete.</p>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> This is the modern default</span>
+    <p>AWS now recommends federated access through <strong>IAM Identity Center</strong> over creating individual IAM users for humans. If an exam question describes a company with an existing corporate directory wanting AWS access, the answer is federation — not "create IAM users for everyone".</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 07 -->
+<section id="s07" aria-labelledby="h07">
+  <h2 id="h07"><span class="n">07</span> Users, groups and roles</h2>
+  <p class="thesis">Three identities. The exam mostly wants to know when the answer is a role.</p>
+
+  <div class="cols three">
+    <div class="card">
+      <h3><span class="w">Long-lived</span> IAM user</h3>
+      <ul>
+        <li>A permanent identity for one person or one application</li>
+        <li>Has a password, access keys, or both</li>
+        <li>Credentials last until someone rotates them</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">A container</span> IAM group</h3>
+      <ul>
+        <li>A collection of users, for attaching policies once</li>
+        <li><strong>Cannot be nested</strong> — no group inside a group</li>
+        <li>Cannot be signed in as; it is not an entity</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Temporary</span> IAM role</h3>
+      <ul>
+        <li>Assumed, not logged into</li>
+        <li><strong>No password and no access key</strong></li>
+        <li>Hands out short-lived credentials that expire on their own</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="call danger">
+    <span class="lbl"><span class="tag">Danger</span> Never put access keys on an EC2 instance</span>
+    <p>The wrong way to let an instance reach S3 is to create an IAM user, generate an access key, and write it into a config file on the box. That key is long-lived, sits on disk, gets committed to Git, and survives the instance.</p>
+    <p>The right way is an <strong>IAM role attached to the instance</strong>. Credentials are delivered automatically, rotate themselves, and expire. <strong>When a question asks how one AWS thing should access another AWS thing, the answer is a role</strong> — nearly every time.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>When each is used</caption>
+      <thead><tr><th scope="col">Situation</th><th scope="col">Use</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">A person needs console access</th><td data-l="Use">Federation through IAM Identity Center, or an IAM user if there is no directory</td></tr>
+        <tr><th scope="row">Twelve developers need the same permissions</th><td data-l="Use">A group, with one policy attached to it</td></tr>
+        <tr><th scope="row">An EC2 instance needs to read S3</th><td data-l="Use">A role attached to the instance</td></tr>
+        <tr><th scope="row">A Lambda function needs DynamoDB</th><td data-l="Use">The function's execution role</td></tr>
+        <tr><th scope="row">Another AWS account needs access</th><td data-l="Use">A role that trusts that account</td></tr>
+        <tr><th scope="row">A user needs admin rights occasionally</th><td data-l="Use">A role they assume when needed, then drop</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 08 -->
+<section id="s08" aria-labelledby="h08">
+  <h2 id="h08"><span class="n">08</span> Policies</h2>
+  <p class="thesis">A policy is the rule book: a JSON document saying which actions are allowed or denied on which resources.</p>
+
+  <h3>Two kinds, by where they attach</h3>
+  <div class="tw">
+    <table>
+      <caption>Where a policy attaches</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Identity-based</th><th scope="col">Resource-based</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Attached to</th><td data-l="Identity-based">A user, group or role</td><td data-l="Resource-based">The resource itself, such as an S3 bucket</td></tr>
+        <tr><th scope="row">Answers</th><td data-l="Identity-based">"What may this identity do?"</td><td data-l="Resource-based">"Who may touch this thing?"</td></tr>
+        <tr><th scope="row">Principal element</th><td data-l="Identity-based">Not used — the identity it is attached to is implied</td><td data-l="Resource-based"><strong>Required</strong>, because it must name who is being trusted</td></tr>
+        <tr><th scope="row">Managed or inline</th><td data-l="Identity-based">Both. AWS managed, customer managed, or inline</td><td data-l="Resource-based"><strong>Inline only</strong>, and only on services that support them</td></tr>
+        <tr><th scope="row">Cross-account</th><td data-l="Identity-based">Needs a role to be assumed</td><td data-l="Resource-based">Can grant access directly to another account</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>The shape of a policy</h3>
+  <pre class="code" tabindex="0" role="region" aria-label="Example IAM policy in JSON">{
+  <b>"Version"</b>: <i>"2012-10-17"</i>,
+  <b>"Statement"</b>: [
+    {
+      <b>"Sid"</b>: <i>"ReadTheReportsBucket"</i>,        <u>// optional label</u>
+      <b>"Effect"</b>: <i>"Allow"</i>,                    <u>// Allow or Deny</u>
+      <b>"Action"</b>: [<i>"s3:GetObject"</i>, <i>"s3:ListBucket"</i>],
+      <b>"Resource"</b>: <i>"arn:aws:s3:::reports/*"</i>,  <u>// which thing</u>
+      <b>"Condition"</b>: {                        <u>// optional, and powerful</u>
+        <b>"IpAddress"</b>: { <i>"aws:SourceIp"</i>: <i>"203.0.113.0/24"</i> }
+      }
+    }
+  ]
+}</pre>
+  <div class="tw">
+    <table>
+      <caption>The elements</caption>
+      <thead><tr><th scope="col">Element</th><th scope="col">Does</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">Version</th><td data-l="Does">The policy language version. Always <span class="mono">2012-10-17</span>; it is not a date you choose.</td></tr>
+        <tr><th scope="row" class="mono">Statement</th><td data-l="Does">A list of rules. A policy can hold several.</td></tr>
+        <tr><th scope="row" class="mono">Sid</th><td data-l="Does">An optional label, purely for humans.</td></tr>
+        <tr><th scope="row" class="mono">Effect</th><td data-l="Does"><span class="mono">Allow</span> or <span class="mono">Deny</span>.</td></tr>
+        <tr><th scope="row" class="mono">Action</th><td data-l="Does">The API calls, as <span class="mono">service:Operation</span>. Wildcards allowed.</td></tr>
+        <tr><th scope="row" class="mono">Resource</th><td data-l="Does">Which resources, by ARN.</td></tr>
+        <tr><th scope="row" class="mono">Principal</th><td data-l="Does">Who is being granted access. <strong>Resource-based policies only.</strong></td></tr>
+        <tr><th scope="row" class="mono">Condition</th><td data-l="Does">Extra tests — source IP, MFA present, time of day, a tag's value.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> An ARN names everything</span>
+    <p>Every resource in AWS has an Amazon Resource Name, shaped
+    <span class="mono">arn:aws:<em>service</em>:<em>region</em>:<em>account</em>:<em>resource</em></span>.
+    Globals like S3 and IAM leave the region and sometimes the account empty, which is why an S3 ARN has the run of colons: <span class="mono">arn:aws:s3:::bucket-name</span>.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 09 -->
+<section id="s09" aria-labelledby="h09">
+  <h2 id="h09"><span class="n">09</span> How a request is decided</h2>
+  <p class="thesis">Learn this flow and a whole class of exam questions becomes mechanical.</p>
+
+  <figure>
+    <div class="flow">
+      <div class="step">Evaluate <strong>all</strong> applicable policies</div>
+      <div class="down">↓</div>
+      <div class="test">Is there an explicit <strong>Deny</strong>?</div>
+      <div class="branch">
+        <div>
+          <div class="lbl2">Yes</div>
+          <div class="end deny">Denied</div>
+        </div>
+        <div>
+          <div class="lbl2">No</div>
+          <div class="test">Is there an explicit <strong>Allow</strong>?</div>
+          <div class="branch" style="margin-top:10px">
+            <div><div class="lbl2">Yes</div><div class="end allow">Allowed</div></div>
+            <div><div class="lbl2">No</div><div class="end deny">Implicit deny</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption>Every applicable policy is gathered first — identity-based, resource-based, and any boundaries or organisation-level controls — and only then evaluated. There is no first-match-wins and no ordering to exploit.</figcaption>
+  </figure>
+
+  <div class="tw">
+    <table>
+      <caption>The three outcomes</caption>
+      <thead><tr><th scope="col">Outcome</th><th scope="col">Happens when</th><th scope="col">Beats</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Explicit deny</th><td data-l="Happens when">Any applicable policy says <span class="mono">"Effect": "Deny"</span></td><td data-l="Beats"><strong>Everything.</strong> Nothing overrides it.</td></tr>
+        <tr><th scope="row">Explicit allow</th><td data-l="Happens when">Some policy says <span class="mono">Allow</span> and nothing denies</td><td data-l="Beats">The default deny</td></tr>
+        <tr><th scope="row">Implicit deny</th><td data-l="Happens when">Nothing mentions the action at all</td><td data-l="Beats">Nothing. It is the default state.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="call danger">
+    <span class="lbl"><span class="tag">Danger</span> Two rules that answer most questions</span>
+    <p><strong>One deny sinks it.</strong> A user can have ten policies allowing an action; a single deny in any one of them, or in a permissions boundary or an Organizations control policy, and the request fails. There is no counting and no majority.</p>
+    <p><strong>Silence is refusal.</strong> Permissions do not exist until granted. "The policy does not mention S3" means no S3 access, not unrestricted S3 access.</p>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Explicit deny versus implicit deny</span>
+    <p>Both end in refusal, so why two names? Because an <strong>implicit</strong> deny can be overturned by adding an allow somewhere, while an <strong>explicit</strong> deny cannot be — the deny has to be removed. That is exactly what makes explicit deny the tool for guardrails you do not want anyone overriding.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 10 -->
+<section id="s10" aria-labelledby="h10">
+  <h2 id="h10"><span class="n">10</span> Securing the account</h2>
+  <p class="thesis">A short list of practices, and one account you should almost never sign in as.</p>
+
+  <h3>Least privilege</h3>
+  <p>Grant the minimum permissions needed for the task, and no more. Start from nothing and add, rather than starting from administrator and trimming. It is easier to grant a missing permission later than to discover an unnecessary one after it has been used.</p>
+
+  <h3>Multi-factor authentication</h3>
+  <p>A password is one factor: something you know. MFA adds something you have — a phone app, a hardware key. A stolen password alone then buys the attacker nothing.</p>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Root MFA is now enforced by default</span>
+    <p>AWS now requires MFA on the root user, prompting at account creation or sign-in. Older study material says "remember to turn on root MFA" as though it were optional. Turn it on for privileged IAM users too, where it is still your responsibility.</p>
+  </div>
+
+  <h3>The rest of the checklist</h3>
+  <ul class="tick">
+    <li><strong>Rotate access keys</strong> regularly, and delete ones nobody uses. Better still, use roles so there are no long-lived keys to rotate.</li>
+    <li><strong>Turn on CloudTrail</strong> so every API call is recorded. Without it there is no answer to "who deleted that".</li>
+    <li><strong>Use AWS Organizations</strong> to separate environments into accounts and apply service control policies across them.</li>
+    <li><strong>Prefer roles over users</strong> wherever something is not a human being.</li>
+  </ul>
+
+  <h3>The root user</h3>
+  <p>The root user is the email address the account was created with. It has unlimited power, cannot be restricted by IAM policy, and should be locked away.</p>
+  <div class="tw">
+    <table>
+      <caption>Root against IAM user</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Root user</th><th scope="col">IAM user</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Created</th><td data-l="Root user">Automatically, with the account</td><td data-l="IAM user">By you, afterwards</td></tr>
+        <tr><th scope="row">Signs in with</th><td data-l="Root user">Account email address</td><td data-l="IAM user">Account ID plus username</td></tr>
+        <tr><th scope="row">Permissions</th><td data-l="Root user">Everything, always</td><td data-l="IAM user">Only what policies grant</td></tr>
+        <tr><th scope="row">Can be restricted</th><td data-l="Root user"><strong>No.</strong> IAM policies do not constrain it.</td><td data-l="IAM user">Yes</td></tr>
+        <tr><th scope="row">Should be used</th><td data-l="Root user">Almost never</td><td data-l="IAM user">For day-to-day work</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What only the root user can do</h3>
+  <p>A short list. Everything else belongs to an IAM identity.</p>
+  <ul class="tick">
+    <li>Change the account email address, root password, or root access keys</li>
+    <li>Close the AWS account</li>
+    <li>Restore IAM permissions if an administrator locks everyone out</li>
+    <li>Turn on IAM access to the Billing and Cost Management console, and some billing tasks</li>
+    <li>Sign up for AWS GovCloud (US)</li>
+    <li>Register as a seller in the Reserved Instance Marketplace</li>
+    <li>Enable MFA Delete on an S3 bucket</li>
+    <li>Fix an S3 bucket policy or SQS queue policy that has locked out every principal</li>
+  </ul>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> One item in the class notes is not on AWS's current list</span>
+    <p>The notes list <em>changing the support plan</em> as root-only. It is widely repeated, but AWS's current documented list of root-only tasks does not include it. The items above are taken from that list — worth trusting over older material, including mine.</p>
+  </div>
+
+  <h3>Protecting it</h3>
+  <ul class="tick">
+    <li>Enable MFA, ideally a hardware key rather than a phone.</li>
+    <li>Delete any root access keys. There is no good reason for the root user to have programmatic access.</li>
+    <li>Use an email address a team can reach, not one person's — people leave.</li>
+    <li>Create an admin IAM identity for real work on day one, and stop using root.</li>
+    <li>Alarm on root sign-in through CloudTrail, so any use is noticed.</li>
+  </ul>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+</main>
+
+<footer id="sources">
+  <h2>Sources</h2>
+  <p>Class notes expanded and checked against AWS documentation. Verified 11 September 2026.</p>
+  <ol>
+    <li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/intro-structure.html">AWS — How IAM works</a> (principals, entities, request evaluation)</li>
+    <li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/reference_policies_evaluation-logic.html">AWS — Policy evaluation logic</a> (explicit deny, implicit deny)</li>
+    <li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies.html">AWS — Policies and permissions</a> (identity-based and resource-based)</li>
+    <li><a href="https://docs.aws.amazon.com/accounts/latest/reference/root-user-tasks.html">AWS — Tasks that require root user credentials</a></li>
+    <li><a href="https://aws.amazon.com/cloud-adoption-framework/">AWS — Cloud Adoption Framework</a> (the six perspectives)</li>
+    <li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_mfa.html">AWS — Multi-factor authentication in IAM</a></li>
+  </ol>
+  <p class="disc">Personal study notes. Diagrams are redrawn from class material, not reproduced. Service icons are the official AWS Architecture Icons, used unmodified. Not affiliated with or endorsed by Amazon Web Services.</p>
+</footer>
+
+</div>
+</body>
+</html>
