@@ -478,3 +478,46 @@ figure .credit a{color:var(--ink-3)}
 .subnetbox .sn{font:700 12px/1.4 var(--mono);color:var(--ink);display:block;margin-bottom:7px}
 .subnetbox .rt{font:600 12.5px/1.5 var(--mono);color:var(--ink-2);display:block;margin-top:7px}
 .subnetbox img{height:26px;width:auto;vertical-align:-7px;margin-right:6px}
+
+/* ============================================================
+   Index: day cards with thumbnails
+   ============================================================ */
+
+.days{list-style:none;padding:0;margin:0;display:grid;gap:18px;grid-template-columns:repeat(2,1fr)}
+@media(max-width:700px){.days{grid-template-columns:1fr}}
+.days>li{margin:0}
+
+.daycard{
+  display:flex;flex-direction:column;height:100%;
+  border:1px solid var(--line);border-radius:12px;background:var(--panel);
+  text-decoration:none;color:inherit;overflow:hidden;
+  transition:border-color .13s ease, transform .13s ease, box-shadow .13s ease
+}
+.daycard:hover{
+  border-color:var(--accent-line);transform:translateY(-2px);
+  box-shadow:0 6px 20px -10px rgba(0,0,0,.28)
+}
+@media(prefers-reduced-motion:reduce){.daycard{transition:none}.daycard:hover{transform:none}}
+.daycard picture{display:block}
+.daycard .shot{
+  display:block;width:100%;height:auto;aspect-ratio:8/5;object-fit:cover;object-position:top center;
+  border-bottom:1px solid var(--line);background:var(--sunk)
+}
+.daycard .body{padding:16px 18px 18px;display:flex;flex-direction:column;flex:1}
+.daycard .num{
+  font:700 11px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;
+  color:var(--accent);display:block;margin-bottom:5px
+}
+.daycard .t{font-size:17px;font-weight:650;letter-spacing:-.012em;line-height:1.3;margin:0 0 7px}
+.daycard .d{font-size:13.5px;line-height:1.5;color:var(--ink-2);margin:0}
+
+li.soon .daycard{
+  border-style:dashed;background:none;cursor:default;
+  transition:none
+}
+li.soon .daycard:hover{border-color:var(--line);transform:none;box-shadow:none}
+li.soon .placeholder{
+  aspect-ratio:8/5;display:flex;align-items:center;justify-content:center;
+  background:var(--sunk);border-bottom:1px dashed var(--line);
+  font:600 12.5px/1.5 var(--mono);color:var(--ink-3);letter-spacing:.04em
+}

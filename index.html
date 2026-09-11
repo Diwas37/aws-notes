@@ -3,93 +3,93 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
 <title>AWS SAA-C03 — Class Notes</title>
-<style>
-:root{
-  --bg:#fbfaf8; --panel:#ffffff; --ink:#1c1a17; --ink-2:#4a4642; --ink-3:#7d7770;
-  --line:#e5e0d8; --line-2:#d3ccc1; --accent:#c2410c; --accent-soft:#fff2ea;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,monospace;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#141312; --panel:#1c1b19; --ink:#f0ece6; --ink-2:#bdb6ac; --ink-3:#8b847a;
-    --line:#2e2c28; --line-2:#403c36; --accent:#fb923c; --accent-soft:#2a1a10;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#141312; --panel:#1c1b19; --ink:#f0ece6; --ink-2:#bdb6ac; --ink-3:#8b847a;
-  --line:#2e2c28; --line-2:#403c36; --accent:#fb923c; --accent-soft:#2a1a10;
-}
-*{box-sizing:border-box}
-body{
-  margin:0;background:var(--bg);color:var(--ink);
-  font:16px/1.6 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Inter,sans-serif;
-  -webkit-font-smoothing:antialiased;
-}
-.wrap{max-width:720px;margin:0 auto;padding:64px 24px 96px}
-.eyebrow{font:600 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:14px}
-h1{font-size:clamp(28px,5vw,38px);line-height:1.15;margin:0 0 12px;letter-spacing:-.02em}
-.sub{color:var(--ink-2);margin:0 0 10px;max-width:52ch}
-.note{color:var(--ink-3);font-size:14px;margin:0 0 40px}
-h2{font:700 11.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);margin:40px 0 14px}
-ul{list-style:none;padding:0;margin:0}
-li{margin-bottom:10px}
-a.day{
-  display:flex;align-items:baseline;gap:16px;padding:16px 20px;
-  border:1px solid var(--line);border-radius:10px;background:var(--panel);
-  text-decoration:none;color:inherit;transition:border-color .12s,transform .12s;
-}
-a.day:hover{border-color:var(--accent);transform:translateX(2px)}
-a.day .n{font:700 12px var(--mono);color:var(--accent);letter-spacing:.06em;flex:none;padding-top:2px}
-a.day .t{font-weight:650;letter-spacing:-.01em}
-a.day .d{display:block;font-weight:400;font-size:14px;color:var(--ink-3);margin-top:3px}
-li.soon{
-  display:flex;align-items:baseline;gap:16px;padding:16px 20px;
-  border:1px dashed var(--line-2);border-radius:10px;color:var(--ink-3);font-size:14.5px;
-}
-li.soon .n{font:700 12px var(--mono);letter-spacing:.06em;flex:none;padding-top:2px}
-footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
-footer a{color:var(--ink-3)}
-</style>
+<link rel="stylesheet" href="notes.css">
 </head>
 <body>
+<a class="skip" href="#days">Skip to the day list</a>
 <div class="wrap">
-  <div class="eyebrow">Class notes</div>
+
+<header class="top" id="top">
   <h1>AWS Certified Solutions Architect — Associate</h1>
   <p class="sub">Notes taken while studying for <strong>SAA-C03</strong>. Written as I go, one page per class.</p>
-  <p class="note">Personal study notes. Not affiliated with or endorsed by Amazon Web Services.</p>
+  <div class="meta">
+    <span class="chip on">SAA-C03</span>
+    <span class="chip">3 days written</span>
+    <span class="chip">Updated 11 Sep 2026</span>
+  </div>
+</header>
 
-  <h2>Days</h2>
-  <ul>
-    <li>
-      <a class="day" href="day-00-orientation.html">
-        <span class="n">00</span>
-        <span class="t">Orientation
-          <span class="d">The exam itself — format, scoring, domain weightage, test center vs online, ESL +30, booking from Kathmandu</span>
-        </span>
-      </a>
-    </li>
-    <li>
-      <a class="day" href="day-01-basics.html">
-        <span class="n">01</span>
-        <span class="t">Networking, Virtualization and Linux
-          <span class="d">IP addressing and CIDR, subnets and the five reserved IPs, TCP/UDP, OSI and TCP/IP, ports, DNS and HTTP, security groups vs NACLs, routing and NAT, hypervisors, Linux permissions and commands</span>
-        </span>
-      </a>
-    </li>
-    <li>
-      <a class="day" href="day-02-cloud-basics.html">
-        <span class="n">02</span>
-        <span class="t">Cloud Basics
-          <span class="d">Why cloud exists, the four primitives, AWS vs traditional IT, service and deployment models, shared responsibility, the 25-service roadmap, first EC2 lab</span>
-        </span>
-      </a>
-    </li>
-  </ul>
+<main id="days">
 
-  <footer>
-    Source: <a href="https://github.com/Diwas37/aws-notes">github.com/Diwas37/aws-notes</a>
-  </footer>
+<ul class="days">
+  <li>
+    <a class="daycard" href="day-00-orientation.html">
+      <picture>
+        <source srcset="thumbs/day-00-dark.webp" media="(prefers-color-scheme: dark)">
+        <img class="shot" src="thumbs/day-00.webp" width="760" height="475" loading="lazy" decoding="async"
+             alt="Preview of the Day 00 page, showing the four exam domains as horizontal bars with their percentage weightings.">
+      </picture>
+      <span class="body">
+        <span class="num">Day 00 · Orientation</span>
+        <span class="t">The exam itself</span>
+        <span class="d">Format and scoring, domain weightage, test centre versus online proctored, the free ESL +30 minutes, and booking from Kathmandu.</span>
+      </span>
+    </a>
+  </li>
+
+  <li>
+    <a class="daycard" href="day-01-basics.html">
+      <picture>
+        <source srcset="thumbs/day-01-dark.webp" media="(prefers-color-scheme: dark)">
+        <img class="shot" src="thumbs/day-01.webp" width="760" height="475" loading="lazy" decoding="async"
+             alt="Preview of the Day 01 page, showing the Type 1 and Type 2 hypervisor stacks side by side.">
+      </picture>
+      <span class="body">
+        <span class="num">Day 01 · Basics</span>
+        <span class="t">Networking, Virtualization and Linux</span>
+        <span class="d">IP addressing and CIDR, subnets and the five reserved addresses, TCP and UDP, OSI and TCP/IP, ports, DNS and HTTP, security groups versus NACLs, routing and NAT, hypervisors, Linux permissions and commands.</span>
+      </span>
+    </a>
+  </li>
+
+  <li>
+    <a class="daycard" href="day-02-cloud-basics.html">
+      <picture>
+        <source srcset="thumbs/day-02-dark.webp" media="(prefers-color-scheme: dark)">
+        <img class="shot" src="thumbs/day-02.webp" width="760" height="475" loading="lazy" decoding="async"
+             alt="Preview of the Day 02 page, showing the 25-service roadmap as cards grouped by category with AWS service icons.">
+      </picture>
+      <span class="body">
+        <span class="num">Day 02 · Cloud Basics</span>
+        <span class="t">What the cloud actually is</span>
+        <span class="d">Why cloud exists, the four primitives, AWS against traditional IT, service and deployment models, the shared responsibility boundary, the 25-service roadmap, and the first EC2 lab.</span>
+      </span>
+    </a>
+  </li>
+
+  <li class="soon">
+    <div class="daycard">
+      <div class="placeholder">Not written yet</div>
+      <span class="body">
+        <span class="num">Day 03</span>
+        <span class="t">Coming next</span>
+        <span class="d">Added after the class.</span>
+      </span>
+    </div>
+  </li>
+</ul>
+
+</main>
+
+<footer>
+  <h2>About</h2>
+  <p>Personal study notes for the AWS Certified Solutions Architect — Associate exam, written class by class. Every page cites its sources and the date they were checked.</p>
+  <p>Source: <a href="https://github.com/Diwas37/aws-notes">github.com/Diwas37/aws-notes</a></p>
+  <p class="disc">Not affiliated with or endorsed by Amazon Web Services. Service icons are the official AWS Architecture Icons, used unmodified.</p>
+</footer>
+
 </div>
 </body>
 </html>
