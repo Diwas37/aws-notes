@@ -498,7 +498,6 @@ figure .credit a{color:var(--ink-3)}
   box-shadow:0 6px 20px -10px rgba(0,0,0,.28)
 }
 @media(prefers-reduced-motion:reduce){.daycard{transition:none}.daycard:hover{transform:none}}
-.daycard picture{display:block}
 .daycard .shot{
   display:block;width:100%;height:auto;aspect-ratio:8/5;object-fit:cover;object-position:top center;
   border-bottom:1px solid var(--line);background:var(--sunk)
