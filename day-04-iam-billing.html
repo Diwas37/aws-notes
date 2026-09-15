@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Day 04 — Advanced IAM and Billing | AWS SAA-C03</title>
+<link rel="stylesheet" href="notes.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+<header class="top" id="top">
+  <h1>Advanced IAM and Billing</h1>
+  <p class="sub">Permissions once there are too many people to manage one at a time, the account structure that contains them, and what all of it costs.</p>
+  <div class="meta">
+    <span class="chip on">Day 04 · Advanced IAM</span>
+    <span class="chip lab">Includes a lab</span>
+    <span class="chip">Organizations &amp; SCPs</span>
+    <span class="chip">Pricing</span>
+    <span class="chip">Support plans</span>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="now">
+  <h2>What to remember</h2>
+  <p class="lede">Domain 1 covers the permission structures, Domain 4 covers the money. Both are on this page.</p>
+  <ol>
+    <li><b>SCPs and permissions boundaries never grant anything.</b> They only set a ceiling. A permission still has to be granted by an identity-based or resource-based policy underneath. <a href="#s05">→ 05</a></li>
+    <li><b>Effective permissions are the intersection</b> of every layer. An action is allowed only if the identity policy, the boundary, and the SCP all permit it. <a href="#s05">→ 05</a></li>
+    <li><b>Spot is cheapest and can be taken away; Savings Plans are cheap and flexible.</b> Match the purchase option to how interruptible the workload is. <a href="#s08">→ 08</a></li>
+    <li><b>Data in is generally free, data out is charged.</b> That one asymmetry drives a surprising number of cost-optimisation answers. <a href="#s07">→ 07</a></li>
+    <li><b>Business support is the cheapest plan with 24/7 technical case support.</b> Basic has no case support at all. <a href="#s11">→ 11</a></li>
+  </ol>
+</div>
+
+<nav class="toc" aria-labelledby="toc-h">
+  <h2 id="toc-h">On this page</h2>
+  <ol>
+    <li><a href="#s01"><span class="n">01</span> Why permissions get hard</a></li>
+    <li><a href="#s02"><span class="n">02</span> RBAC and ABAC</a></li>
+    <li><a href="#s03"><span class="n">03</span> AWS Organizations</a></li>
+    <li><a href="#s04"><span class="n">04</span> Service control policies</a></li>
+    <li><a href="#s05"><span class="n">05</span> Layered permissions</a></li>
+    <li><a href="#s06"><span class="n">06</span> Control Tower</a></li>
+    <li><a href="#s07"><span class="n">07</span> How AWS charges</a></li>
+    <li><a href="#s08"><span class="n">08</span> Four ways to buy compute</a></li>
+    <li><a href="#s09"><span class="n">09</span> The free tier</a></li>
+    <li><a href="#s10"><span class="n">10</span> Watching the bill</a></li>
+    <li><a href="#s11"><span class="n">11</span> Support plans</a></li>
+    <li><a href="#s12"><span class="n">12</span> Lab: exploring IAM</a></li>
+  </ol>
+</nav>
+
+<!-- 01 -->
+<section id="s01" aria-labelledby="h01">
+  <h2 id="h01"><span class="n">01</span> Why permissions get hard</h2>
+  <p class="thesis">Attaching a policy to one user is easy. Attaching the right policy to four hundred users, as they join, move team and leave, is not.</p>
+  <div class="tw">
+    <table>
+      <caption>Two ways to scale it</caption>
+      <thead><tr><th scope="col">Approach</th><th scope="col">What happens</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Policy per user</th><td data-l="What happens">Every new hire needs a policy written. Every leaver needs one revoked. Permissions drift apart, nobody can answer "who can delete production", and the drift is invisible until an audit.</td></tr>
+        <tr><th scope="row">Policy per group</th><td data-l="What happens">Write the policy once for the job, then move people in and out. Joining a team <em>is</em> the permission change. One place to read, one place to fix.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>This is the whole reason groups exist, and it is why <a href="day-03-aws-basics-iam.html#s07">Day 03</a> said to attach policies to groups rather than users. It is also where the limits start to show: groups cannot be nested, so a deep organisation runs out of expressiveness quickly.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 02 -->
+<section id="s02" aria-labelledby="h02">
+  <h2 id="h02"><span class="n">02</span> RBAC and ABAC</h2>
+  <p class="thesis">Two models for deciding who gets what. One asks what your job is; the other asks what the resource is labelled.</p>
+  <div class="tw">
+    <table>
+      <caption>Role-based vs attribute-based</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">RBAC</th><th scope="col">ABAC</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Decides on</th><td data-l="RBAC">The role or group you are in</td><td data-l="ABAC">Tags on the identity and the resource</td></tr>
+        <tr><th scope="row">A new project means</th><td data-l="RBAC">A new group and a new policy</td><td data-l="ABAC">A new tag value. <strong>No policy change.</strong></td></tr>
+        <tr><th scope="row">Policy count</th><td data-l="RBAC">Grows with the organisation</td><td data-l="ABAC">Stays roughly constant</td></tr>
+        <tr><th scope="row">Best for</th><td data-l="RBAC">Stable, well-known job functions</td><td data-l="ABAC">Many teams and projects, changing often</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Tags</h3>
+  <p>A tag is a <strong>key and a value</strong> attached to a resource: <span class="mono">Project = apollo</span>, <span class="mono">Environment = production</span>, <span class="mono">CostCentre = 4021</span>. They are free, and they do three jobs at once: drive ABAC policies, group costs in Cost Explorer, and find things later.</p>
+  <pre class="code" tabindex="0" role="region" aria-label="An ABAC policy example in JSON">{
+  <b>"Effect"</b>: <i>"Allow"</i>,
+  <b>"Action"</b>: <i>"ec2:StartInstances"</i>,
+  <b>"Resource"</b>: <i>"*"</i>,
+  <b>"Condition"</b>: {
+    <b>"StringEquals"</b>: {
+      <u>// the instance's tag must match the user's tag</u>
+      <i>"aws:ResourceTag/Project"</i>: <i>"${aws:PrincipalTag/Project}"</i>
+    }
+  }
+}</pre>
+  <p class="fine">That single statement covers every project that will ever exist. Tag a user with their project, tag the instances with theirs, and the policy never needs editing again — which is exactly the argument for ABAC.</p>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> ABAC lives or dies on tagging discipline</span>
+    <p>If resources go untagged, an ABAC policy silently grants nothing and people file tickets. Tag policies in Organizations, or a permission that requires a tag on creation, are how teams keep it honest.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 03 -->
+<section id="s03" aria-labelledby="h03">
+  <h2 id="h03"><span class="n">03</span> AWS Organizations</h2>
+  <p class="thesis">One account stops being enough quickly. Organizations manages many accounts as a tree.</p>
+
+  <figure>
+    <div class="region">
+      <span class="rlabel">Root · one per organization</span>
+      <div class="azs">
+        <div class="az"><span class="azn">OU · Production</span>
+          <div class="dc">account: web-prod</div><div class="dc">account: data-prod</div></div>
+        <div class="az"><span class="azn">OU · Development</span>
+          <div class="dc">account: sandbox-1</div><div class="dc">account: sandbox-2</div></div>
+        <div class="az"><span class="azn">OU · Security</span>
+          <div class="dc">account: log-archive</div><div class="dc">account: audit</div></div>
+      </div>
+      <p style="margin:12px 0 0;font-size:13.5px;color:var(--ink-2)">Management account sits above the root and pays every bill.</p>
+    </div>
+    <figcaption>Organizational units nest up to five levels deep. A policy attached to an OU is inherited by everything beneath it, which is what makes the tree worth having.</figcaption>
+  </figure>
+
+  <h3>Why separate accounts at all</h3>
+  <ul class="tick">
+    <li><strong>A blast radius.</strong> A mistake in the sandbox account cannot reach production, because they are different accounts.</li>
+    <li><strong>One bill.</strong> Consolidated billing across every account, with volume discounts pooled.</li>
+    <li><strong>Policy inheritance.</strong> Apply a rule once at an OU and every account under it obeys.</li>
+    <li><strong>Clean cost attribution.</strong> Per-account costs need no tagging discipline to be meaningful.</li>
+  </ul>
+
+  <h3>Quotas worth knowing</h3>
+  <div class="tw">
+    <table>
+      <caption>Organizations limits</caption>
+      <thead><tr><th scope="col">Thing</th><th scope="col">Limit</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Roots per organization</th><td data-l="Limit" class="mono">1</td></tr>
+        <tr><th scope="row">OUs per organization</th><td data-l="Limit" class="mono">2,000</td></tr>
+        <tr><th scope="row">OU nesting depth</th><td data-l="Limit" class="mono">5 levels</td></tr>
+        <tr><th scope="row">SCPs per organization</th><td data-l="Limit" class="mono">10,000</td></tr>
+        <tr><th scope="row">Maximum size of one SCP</th><td data-l="Limit" class="mono">10,240 characters</td></tr>
+        <tr><th scope="row">SCPs attached to one entity</th><td data-l="Limit" class="mono">10</td></tr>
+        <tr><th scope="row">Invitations per 24 hours</th><td data-l="Limit" class="mono">20</td></tr>
+        <tr><th scope="row">Accounts, by default</th><td data-l="Limit" class="mono">10, adjustable on request</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Three numbers in the class notes have moved</span>
+    <p>The notes record <strong>1,000 OUs</strong>, <strong>1,000 SCPs</strong> and <strong>5,120 bytes</strong> per SCP. AWS's current quotas are <strong>2,000 OUs</strong>, <strong>10,000 SCPs</strong> and <strong>10,240 characters</strong>. The 5,120 figure is now the limit for <em>resource</em> control policies, a different policy type, which is probably where the confusion came from. The table above follows AWS's live quota page, linked in the sources.</p>
+    <p>None of this is likely to be examined to the digit. The shapes worth carrying are: one root, five levels of nesting, and quotas that are mostly adjustable.</p>
+  </div>
+  <p>Organizations is reachable the usual four ways: Console, CLI, SDK and API.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 04 -->
+<section id="s04" aria-labelledby="h04">
+  <h2 id="h04"><span class="n">04</span> Service control policies</h2>
+  <p class="thesis">An SCP is a ceiling on what an account may do. It never gives anyone anything.</p>
+
+  <p>Attach an SCP to the root, an OU or an account, and it limits every IAM user and role beneath it. The most common use is a guardrail: <em>nobody in this organisation, however senior, may turn off CloudTrail or launch resources outside our approved Regions.</em></p>
+
+  <pre class="code" tabindex="0" role="region" aria-label="A service control policy denying use of Regions outside Europe">{
+  <b>"Version"</b>: <i>"2012-10-17"</i>,
+  <b>"Statement"</b>: [{
+    <b>"Effect"</b>: <i>"Deny"</i>,
+    <b>"Action"</b>: <i>"*"</i>,
+    <b>"Resource"</b>: <i>"*"</i>,
+    <b>"Condition"</b>: {
+      <b>"StringNotEquals"</b>: {
+        <i>"aws:RequestedRegion"</i>: [<i>"eu-west-1"</i>, <i>"eu-central-1"</i>]
+      }
+    }
+  }]
+}</pre>
+  <p class="fine">A deny like this cannot be overridden by any administrator in a member account, which is the point of putting it at the organisation level.</p>
+
+  <div class="tw">
+    <table>
+      <caption>How SCPs behave</caption>
+      <thead><tr><th scope="col">Question</th><th scope="col">Answer</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Does it grant permissions?</th><td data-l="Answer"><strong>No.</strong> It only limits. The permission still has to be granted by an IAM policy.</td></tr>
+        <tr><th scope="row">Does it apply to the management account?</th><td data-l="Answer">No. SCPs do not restrict the organisation's management account, which is one reason not to run workloads there.</td></tr>
+        <tr><th scope="row">Does it apply to the root user?</th><td data-l="Answer">Yes, in <em>member</em> accounts. This is the one thing that can constrain a member account's root user.</td></tr>
+        <tr><th scope="row">What does an action need?</th><td data-l="Answer">To be allowed in <strong>both</strong> the SCP and an IAM policy. Either one saying no is enough.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 05 -->
+<section id="s05" aria-labelledby="h05">
+  <h2 id="h05"><span class="n">05</span> Layered permissions</h2>
+  <p class="thesis">Several policy types can apply to one request. Two of them only subtract, and knowing which is the whole game.</p>
+
+  <div class="tw">
+    <table>
+      <caption>Grants against ceilings</caption>
+      <thead><tr><th scope="col">Type</th><th scope="col">Attached to</th><th scope="col">Grants?</th><th scope="col">Limits?</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Identity-based policy</th><td data-l="Attached to">User, group, role</td><td data-l="Grants?"><strong>Yes</strong></td><td data-l="Limits?">Yes, via explicit deny</td></tr>
+        <tr><th scope="row">Resource-based policy</th><td data-l="Attached to">The resource</td><td data-l="Grants?"><strong>Yes</strong></td><td data-l="Limits?">Yes, via explicit deny</td></tr>
+        <tr><th scope="row">Permissions boundary</th><td data-l="Attached to">One user or role</td><td data-l="Grants?">No</td><td data-l="Limits?"><strong>Yes</strong></td></tr>
+        <tr><th scope="row">Service control policy</th><td data-l="Attached to">Root, OU or account</td><td data-l="Grants?">No</td><td data-l="Limits?"><strong>Yes</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="call danger">
+    <span class="lbl"><span class="tag">Danger</span> The single most misread idea here</span>
+    <p>A permissions boundary that permits <span class="mono">s3:*</span> does <strong>not</strong> give anybody S3 access. It says: <em>this identity may never exceed S3, whatever its policies say.</em> Attach that boundary to a user with no other policy and they can do nothing at all.</p>
+    <p>Same for an SCP. Both are ceilings. Something underneath still has to do the granting.</p>
+  </div>
+
+  <h3>Working out the effective permission</h3>
+  <p>An action is allowed only when <strong>every</strong> applicable layer permits it. In effect, the permission is the <em>intersection</em>:</p>
+  <div class="tw">
+    <table>
+      <caption>A worked example</caption>
+      <thead><tr><th scope="col">Layer</th><th scope="col">Says</th><th scope="col">Running result</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">SCP on the OU</th><td data-l="Says">Allow everything except <span class="mono">iam:*</span></td><td data-l="Running result">Everything but IAM</td></tr>
+        <tr><th scope="row">Permissions boundary</th><td data-l="Says">Allow <span class="mono">s3:*</span> and <span class="mono">ec2:*</span></td><td data-l="Running result">S3 and EC2 only</td></tr>
+        <tr><th scope="row">Identity policy</th><td data-l="Says">Allow <span class="mono">s3:*</span> and <span class="mono">rds:*</span></td><td data-l="Running result"><strong>S3 only</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">RDS was granted but sits outside the boundary. EC2 is inside the boundary but was never granted. Only S3 survives all three. And an explicit deny in <em>any</em> layer would end it immediately, as on <a href="day-03-aws-basics-iam.html#s09">Day 03</a>.</p>
+
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Boundary or SCP?</span>
+    <p>A <strong>permissions boundary</strong> targets one identity. Its classic use is safe delegation: let a team lead create IAM users, but bound them so the users they create can never exceed what the lead has.</p>
+    <p>An <strong>SCP</strong> targets whole accounts. Its classic use is organisation-wide guardrails that no local administrator can lift.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 06 -->
+<section id="s06" aria-labelledby="h06">
+  <h2 id="h06"><span class="n">06</span> Control Tower</h2>
+  <p class="thesis">Organizations gives you the parts. Control Tower assembles them into a working multi-account setup.</p>
+  <ul class="tick">
+    <li>Sets up a <strong>landing zone</strong>: a multi-account environment built to AWS's own recommended pattern.</li>
+    <li>Creates the usual accounts for you, including log archive and audit.</li>
+    <li>Applies <strong>controls</strong> (formerly "guardrails") — preventive ones implemented as SCPs, detective ones as AWS Config rules.</li>
+    <li>Provides an <strong>account factory</strong> so new accounts come out pre-configured rather than hand-built.</li>
+    <li>Gives a dashboard showing which accounts are drifting out of compliance.</li>
+  </ul>
+  <p class="fine">In a sentence: Organizations is the mechanism, Control Tower is the opinionated setup on top of it. If a question describes a company wanting a governed multi-account environment without designing one from scratch, Control Tower is the answer.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 07 -->
+<section id="s07" aria-labelledby="h07">
+  <h2 id="h07"><span class="n">07</span> How AWS charges</h2>
+  <p class="thesis">Three things are metered, and one asymmetry causes most surprise bills.</p>
+  <div class="tw">
+    <table>
+      <caption>What is metered</caption>
+      <thead><tr><th scope="col">Dimension</th><th scope="col">Charged as</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Compute</th><td data-l="Charged as">Per hour or per second, while it runs. Stop the instance and compute charges stop.</td></tr>
+        <tr><th scope="row">Storage</th><td data-l="Charged as">Per GB per month, whether or not you touch it. An EBS volume attached to a stopped instance still costs.</td></tr>
+        <tr><th scope="row">Data transfer</th><td data-l="Charged as"><strong>Inbound is generally free. Outbound to the internet is charged.</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> The asymmetry is deliberate</span>
+    <p>Getting data <em>into</em> AWS costs nothing; getting it out costs per gigabyte. That shapes real architecture: it is why CloudFront in front of S3 saves money, why cross-AZ chatter shows up on bills, and why "download everything back out nightly" is an expensive design. When a cost question involves lots of egress, look for a caching or endpoint answer.</p>
+  </div>
+
+  <h3>Four ways the price comes down</h3>
+  <ul class="tick">
+    <li><strong>Pay as you go</strong> — no commitment, but the highest unit price.</li>
+    <li><strong>Pay less when you reserve</strong> — commit to one or three years for a substantial discount.</li>
+    <li><strong>Pay less by using more</strong> — volume tiers on S3, EBS and EFS mean the marginal GB gets cheaper.</li>
+    <li><strong>Pay less as AWS grows</strong> — economies of scale get passed on; the class noted 134 price reductions between 2006 and 2023.</li>
+  </ul>
+  <p class="fine">Very large customers can also negotiate custom pricing, which is not something the exam tests.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 08 -->
+<section id="s08" aria-labelledby="h08">
+  <h2 id="h08"><span class="n">08</span> Four ways to buy compute</h2>
+  <p class="thesis">Same instance, four price tags. The difference is what you promise and what you risk.</p>
+
+  <figure>
+    <div class="buy">
+      <div class="b1">
+        <span class="bn">On-Demand</span>
+        <ul><li>No commitment</li><li>High flexibility</li><li>No upfront payment</li><li>Easy to work with</li><li><strong>Most expensive</strong></li></ul>
+      </div>
+      <div class="b2">
+        <span class="bn">Spot</span>
+        <ul><li>No commitment</li><li>No flexibility</li><li><strong>AWS can terminate it</strong></li><li>Very difficult to work with</li><li><strong>Cheapest possible</strong></li></ul>
+      </div>
+      <div class="b3">
+        <span class="bn">Reserved</span>
+        <ul><li>1 or 3 year commitment</li><li>Low to moderate flexibility</li><li>Upfront payment optional</li><li>Difficult to work with</li><li>Cheap</li></ul>
+      </div>
+      <div class="b4">
+        <span class="bn">Savings Plans</span>
+        <ul><li>1 or 3 year commitment</li><li>Moderate to high flexibility</li><li>Upfront payment optional</li><li>Easy to work with</li><li>Cheap</li></ul>
+      </div>
+    </div>
+    <figcaption>Reserved Instances lock you to an instance family and Region. Savings Plans commit you to an hourly spend instead, and apply across families and even across compute services — which is why they are described as easier to work with for the same discount.</figcaption>
+  </figure>
+
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Spot is not "cheap On-Demand"</span>
+    <p>AWS reclaims Spot capacity when it needs it, giving about two minutes of warning. That makes Spot excellent for batch jobs, rendering, CI runners and anything that can restart, and unusable for a database or a checkout service.</p>
+    <p>Exam shorthand: <strong>fault-tolerant, interruptible, stateless → Spot.</strong> Steady baseline → Savings Plans or Reserved. Unpredictable or short-lived → On-Demand.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 09 -->
+<section id="s09" aria-labelledby="h09">
+  <h2 id="h09"><span class="n">09</span> The free tier</h2>
+  <p class="thesis">The free tier changed in July 2025, and most study material still describes the old one.</p>
+  <div class="tw">
+    <table>
+      <caption>Old and new</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Accounts before 15 July 2025</th><th scope="col">Accounts after</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Shape</th><td data-l="Before">Twelve months of per-service free allowances</td><td data-l="After">Credits you spend on anything</td></tr>
+        <tr><th scope="row">Amount</th><td data-l="Before">Service-by-service quotas</td><td data-l="After"><strong>$100 on signup, up to $100 more earned — $200 maximum</strong></td></tr>
+        <tr><th scope="row">Duration</th><td data-l="Before">12 months</td><td data-l="After"><strong>6 months, or until credits run out</strong></td></tr>
+        <tr><th scope="row">At the end</th><td data-l="Before">Reverts to pay-as-you-go</td><td data-l="After">A Free plan account closes; a Paid plan keeps billing</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Both models keep the <strong>always free</strong> tier: more than 30 services with permanent monthly allowances that never expire, for any account. There are also short-term trials on individual services.</p>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> The class notes are current here</span>
+    <p>"$200 for 6 months" and "30+ always free" match the new model exactly. Worth knowing the twelve-month version existed, since older practice questions still assume it.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 10 -->
+<section id="s10" aria-labelledby="h10">
+  <h2 id="h10"><span class="n">10</span> Watching the bill</h2>
+  <p class="thesis">One estimating tool, one comparison method, and three tools for after the money is spent.</p>
+
+  <h3>Before you build</h3>
+  <div class="tw">
+    <table>
+      <caption>Planning tools</caption>
+      <thead><tr><th scope="col">Tool</th><th scope="col">For</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Pricing Calculator</th><td data-l="For">Model an architecture and get an estimate before building it.</td></tr>
+        <tr><th scope="row">Total Cost of Ownership</th><td data-l="For">A financial estimate covering <strong>direct and indirect</strong> costs, used to compare cloud against on-premises. The indirect half — floor space, power, cooling, staff time, hardware refresh — is what makes on-premises look cheaper than it is.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>After you build</h3>
+  <div class="cols three">
+    <div class="card">
+      <h3>AWS Budgets</h3>
+      <ul>
+        <li>Set a threshold, get alerted when spend or usage crosses it</li>
+        <li>Can alert on forecast, not just actuals</li>
+        <li>The one to name when a question says "notify before we overspend"</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Cost Explorer</h3>
+      <ul>
+        <li>Visualise and break down spend over time</li>
+        <li>Filter by service, account, tag</li>
+        <li>For "why did the bill go up"</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Cost and Usage Report</h3>
+      <ul>
+        <li>The most granular data available, as CSV into S3</li>
+        <li>Line-item level, for your own analysis</li>
+        <li>For finance teams and chargeback</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3>Consolidated billing</h3>
+  <p>With Organizations, every account's usage rolls up to the management account. Two consequences:</p>
+  <ul class="tick">
+    <li><strong>One bill</strong> for the whole organisation instead of many.</li>
+    <li><strong>Volume discounts arrive sooner</strong>, because usage is pooled across accounts. Ten accounts each storing a little hit the next S3 pricing tier together, which none would reach alone.</li>
+  </ul>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 11 -->
+<section id="s11" aria-labelledby="h11">
+  <h2 id="h11"><span class="n">11</span> Support plans</h2>
+  <p class="thesis">Four tiers in the class slide. The dividing line that matters is whether you can open a technical case at all.</p>
+  <div class="tw">
+    <table>
+      <caption>Response time by severity</caption>
+      <thead><tr><th scope="col">Plan</th><th scope="col">Critical</th><th scope="col">Urgent</th><th scope="col">High</th><th scope="col">Normal</th><th scope="col">Low</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Basic</th><td data-l="Critical" colspan="5"><strong>No case support.</strong> Documentation, forums and health dashboard only.</td></tr>
+        <tr><th scope="row">Developer <span class="fine">business hours</span></th><td data-l="Critical">—</td><td data-l="Urgent">—</td><td data-l="High">—</td><td data-l="Normal">12 hours</td><td data-l="Low">24 hours</td></tr>
+        <tr><th scope="row">Business <span class="fine">24/7</span></th><td data-l="Critical">—</td><td data-l="Urgent">1 hour</td><td data-l="High">4 hours</td><td data-l="Normal">12 hours</td><td data-l="Low">24 hours</td></tr>
+        <tr><th scope="row">Enterprise <span class="fine">24/7</span></th><td data-l="Critical"><strong>15 minutes</strong></td><td data-l="Urgent">1 hour</td><td data-l="High">4 hours</td><td data-l="Normal">12 hours</td><td data-l="Low">24 hours</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> There is a fifth plan the slide leaves out</span>
+    <p>AWS also sells <strong>Enterprise On-Ramp</strong>, between Business and Enterprise, with a 30-minute critical response. The slide's four are the ones usually asked about, but do not be thrown if a question lists five.</p>
+  </div>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> The exam shorthand</span>
+    <p><strong>Business</strong> is the cheapest plan with 24/7 technical support and third-party software help — the usual answer for a production workload. <strong>Enterprise</strong> adds a technical account manager and the 15-minute critical response, for business-critical systems. <strong>Developer</strong> is for experimenting. <strong>Basic</strong> cannot open a technical case.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 12 -->
+<section id="s12" aria-labelledby="h12">
+  <h2 id="h12"><span class="n">12</span> Lab: exploring IAM</h2>
+  <p class="thesis">AWS Academy guided lab. Three users, three groups, three job functions — the group argument from section 01, made concrete.</p>
+
+  <div class="tw">
+    <table>
+      <caption>The lab's business scenario</caption>
+      <thead><tr><th scope="col">User</th><th scope="col">In group</th><th scope="col">Gets</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">user-1</th><td data-l="In group" class="mono">S3-Support</td><td data-l="Gets">Read-only access to Amazon S3</td></tr>
+        <tr><th scope="row" class="mono">user-2</th><td data-l="In group" class="mono">EC2-Support</td><td data-l="Gets">Read-only access to Amazon EC2</td></tr>
+        <tr><th scope="row" class="mono">user-3</th><td data-l="In group" class="mono">EC2-Admin</td><td data-l="Gets">View, start and stop EC2 instances</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>What the lab walks through</h3>
+  <ol class="steps">
+    <li>Inspect the pre-created users and notice each starts in <b>no group</b>, with a console password under <b>Security credentials</b>.</li>
+    <li>Look at the three groups and their attached policies — <span class="mono">AmazonEC2ReadOnlyAccess</span> and <span class="mono">AmazonS3ReadOnlyAccess</span> are <b>AWS managed policies</b>, prebuilt and maintained by AWS.</li>
+    <li>Read the <b>EC2-Admin</b> policy as JSON and see it grant <span class="mono">Describe</span>, <span class="mono">StartInstances</span> and <span class="mono">StopInstances</span> — a custom policy rather than a managed one.</li>
+    <li>Add each user to the group matching their job function.</li>
+    <li>Sign in as each user in turn and confirm they can do exactly what the group allows, and nothing else.</li>
+  </ol>
+
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Three things the lab is really teaching</span>
+    <p><strong>Permissions came from group membership, not from the user.</strong> No policy was ever attached to a user directly — which is section 01's argument demonstrated rather than asserted.</p>
+    <p><strong>Managed policies update themselves.</strong> When AWS adds an EC2 read action, <span class="mono">AmazonEC2ReadOnlyAccess</span> picks it up and every attached group gets it. A copied inline policy would not.</p>
+    <p><strong>Signing in as the user is the only real test.</strong> Reading a policy and believing it does what you think is how over-permissive access survives review.</p>
+  </div>
+  <p class="fine">Lab content belongs to AWS Academy and is not reproduced here; this is a summary of what was done and why.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+</main>
+
+<footer id="sources">
+  <h2>Sources</h2>
+  <p>Class notes expanded and checked against AWS documentation. Verified 15 September 2026.</p>
+  <ol>
+    <li><a href="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_reference_limits.html">AWS — Organizations quotas</a> (the corrected OU, SCP and policy-size limits)</li>
+    <li><a href="https://docs.aws.amazon.com/organizations/latest/userguide/orgs_manage_policies_scps.html">AWS — Service control policies</a></li>
+    <li><a href="https://docs.aws.amazon.com/IAM/latest/UserGuide/access_policies_boundaries.html">AWS — Permissions boundaries</a></li>
+    <li><a href="https://aws.amazon.com/about-aws/whats-new/2025/07/aws-free-tier-credits-month-free-plan/">AWS — Free Tier: $200 credits and six-month plan</a> (July 2025 change)</li>
+    <li><a href="https://aws.amazon.com/premiumsupport/plans/">AWS — Support plans</a></li>
+    <li><a href="https://aws.amazon.com/controltower/">AWS — Control Tower</a></li>
+  </ol>
+  <p class="disc">Personal study notes. The lab section summarises an AWS Academy guided lab rather than reproducing it. Diagrams are redrawn from class material. Not affiliated with or endorsed by Amazon Web Services.</p>
+</footer>
+
+</div>
+</body>
+</html>

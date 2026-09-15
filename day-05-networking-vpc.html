@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Day 05 — Networking and the VPC | AWS SAA-C03</title>
+<link rel="stylesheet" href="notes.css">
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="wrap">
+
+<header class="top" id="top">
+  <h1>Networking and the VPC</h1>
+  <p class="sub">Your own private network inside AWS: how it is addressed, how traffic gets in and out, what filters it, and how it reaches other networks.</p>
+  <div class="meta">
+    <span class="chip on">Day 05 · Networking</span>
+    <span class="chip">VPC &amp; subnets</span>
+    <span class="chip">NAT &amp; gateways</span>
+    <span class="chip">Peering &amp; endpoints</span>
+    <span class="chip">Flow logs</span>
+  </div>
+</header>
+
+<main id="main">
+
+<div class="now">
+  <h2>What to remember</h2>
+  <p class="lede">VPC is the backbone of Domain 1 and Domain 2. These five recur constantly.</p>
+  <ol>
+    <li><b>A subnet's CIDR can never be changed after creation</b>, and neither can the VPC's. Size it generously the first time. <a href="#s02">→ 02</a></li>
+    <li><b>Public means one thing only: a route to an internet gateway.</b> Private means a route to a NAT gateway instead. <a href="#s03">→ 03</a></li>
+    <li><b>NACL rules are numbered and first match wins; security group rules are all evaluated together.</b> Only the NACL can deny. <a href="#s06">→ 06</a></li>
+    <li><b>VPC endpoints let private instances reach AWS services with no internet gateway, no NAT and no public IP.</b> Usually the cost-optimisation answer. <a href="#s07">→ 07</a></li>
+    <li><b>Peering is not transitive</b> and peered VPCs cannot have overlapping CIDRs. Many VPCs means a transit gateway. <a href="#s08">→ 08</a></li>
+  </ol>
+</div>
+
+<nav class="toc" aria-labelledby="toc-h">
+  <h2 id="toc-h">On this page</h2>
+  <ol>
+    <li><a href="#s01"><span class="n">01</span> What a VPC is</a></li>
+    <li><a href="#s02"><span class="n">02</span> Addressing rules</a></li>
+    <li><a href="#s03"><span class="n">03</span> Public and private subnets</a></li>
+    <li><a href="#s04"><span class="n">04</span> NAT gateway and NAT instance</a></li>
+    <li><a href="#s05"><span class="n">05</span> Route tables and interfaces</a></li>
+    <li><a href="#s06"><span class="n">06</span> Security groups and NACLs</a></li>
+    <li><a href="#s07"><span class="n">07</span> VPC endpoints</a></li>
+    <li><a href="#s08"><span class="n">08</span> Connecting VPCs</a></li>
+    <li><a href="#s09"><span class="n">09</span> Reaching on-premises</a></li>
+    <li><a href="#s10"><span class="n">10</span> Bastion hosts</a></li>
+    <li><a href="#s11"><span class="n">11</span> Seeing the traffic</a></li>
+    <li><a href="#s12"><span class="n">12</span> Lab ahead: build a VPC</a></li>
+  </ol>
+</nav>
+
+<!-- 01 -->
+<section id="s01" aria-labelledby="h01">
+  <h2 id="h01"><span class="n">01</span> What a VPC is</h2>
+  <p class="thesis">A virtual private cloud is a network you define in software: address range, subnets, route tables and gateways.</p>
+  <ul class="tick">
+    <li>Every account starts with a <strong>default VPC</strong> in each Region, which is why an instance launches and works with no setup at all.</li>
+    <li>A <strong>VPC lives in exactly one Region</strong>, and spans every Availability Zone in it.</li>
+    <li>A <strong>subnet lives in exactly one Availability Zone</strong>, and cannot straddle two.</li>
+    <li>Resources in one account's VPC are isolated from every other account by default.</li>
+  </ul>
+  <div class="tw">
+    <table>
+      <caption>Latency, roughly</caption>
+      <thead><tr><th scope="col">Between</th><th scope="col">Expect</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Two instances in the same AZ</th><td data-l="Expect"><strong>Single-digit milliseconds</strong>, often well under one.</td></tr>
+        <tr><th scope="row">Two AZs in the same Region</th><td data-l="Expect"><strong>Low tens of milliseconds</strong> at worst; usually one to two.</td></tr>
+        <tr><th scope="row">Two Regions</th><td data-l="Expect">Tens to hundreds, depending on distance.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">These are the class's rough figures. The point they make is the one that matters: cross-AZ is cheap enough to design for high availability, cross-Region is not.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 02 -->
+<section id="s02" aria-labelledby="h02">
+  <h2 id="h02"><span class="n">02</span> Addressing rules</h2>
+  <p class="thesis">Four rules, and the first is the one people regret.</p>
+  <div class="tw">
+    <table>
+      <caption>The rules</caption>
+      <thead><tr><th scope="col">Rule</th><th scope="col">Consequence</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">The CIDR is fixed at creation</th><td data-l="Consequence"><strong>You cannot change a VPC's or a subnet's address range afterwards.</strong> You can add a secondary CIDR to a VPC, but the original never moves. Size it with room to grow.</td></tr>
+        <tr><th scope="row">Subnet CIDRs cannot overlap</th><td data-l="Consequence">Within a VPC, every subnet gets a distinct slice.</td></tr>
+        <tr><th scope="row">Smallest subnet is <span class="mono">/28</span></th><td data-l="Consequence">16 addresses, of which 11 are usable.</td></tr>
+        <tr><th scope="row">Largest subnet is <span class="mono">/16</span></th><td data-l="Consequence">65,536 addresses, 65,531 usable.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Five addresses are always reserved</h3>
+  <p>In every subnet, whatever its size. For <span class="mono">10.0.0.0/24</span>:</p>
+  <div class="tw">
+    <table>
+      <caption>Reserved in every subnet</caption>
+      <thead><tr><th scope="col">Address</th><th scope="col">Reserved for</th></tr></thead>
+      <tbody>
+        <tr><th scope="row" class="mono">10.0.0.0</th><td data-l="Reserved for">Network address</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.1</th><td data-l="Reserved for">Internal communication — the VPC router</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.2</th><td data-l="Reserved for">DNS resolution</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.3</th><td data-l="Reserved for">Future use</td></tr>
+        <tr><th scope="row" class="mono">10.0.0.255</th><td data-l="Reserved for">Network broadcast address</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="fine">So a <span class="mono">/24</span> gives <strong>251</strong> usable addresses, not 256 and not 254. A VPC of <span class="mono">10.0.0.0/16</span> split into four <span class="mono">/24</span> subnets has 251 in each. Covered with the bit arithmetic on <a href="day-01-basics.html#s01">Day 01</a>.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 03 -->
+<section id="s03" aria-labelledby="h03">
+  <h2 id="h03"><span class="n">03</span> Public and private subnets</h2>
+  <p class="thesis">There is no "public" checkbox. A subnet is public because of one route, and nothing else.</p>
+
+  <div class="cols">
+    <div class="card">
+      <h3><span class="w">Reachable</span> Public subnet</h3>
+      <ul>
+        <li>Route table has <span class="mono">0.0.0.0/0 → internet gateway</span></li>
+        <li>Instances also need a public or Elastic IP of their own</li>
+        <li>Traffic flows <strong>both ways</strong> — no NAT involved</li>
+        <li>For load balancers, bastion hosts, NAT gateways</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Outbound only</span> Private subnet</h3>
+      <ul>
+        <li><strong>No route to an internet gateway</strong></li>
+        <li>Reaches out through a NAT gateway or NAT instance sitting in a public subnet</li>
+        <li>Nothing on the internet can start a connection inward</li>
+        <li>For databases, application servers, anything not public</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> What a public instance actually needs</span>
+    <p>Three things together, and missing any one breaks it: an <strong>internet gateway attached to the VPC</strong>, a <strong>route</strong> to it in the subnet's route table, and a <strong>public or Elastic IP</strong> on the instance. Security groups and NACLs then have to permit the traffic on top of that.</p>
+  </div>
+
+  <div class="tw">
+    <table>
+      <caption>Where things belong</caption>
+      <thead><tr><th scope="col">Resource</th><th scope="col">Subnet</th><th scope="col">Why</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Database</th><td data-l="Subnet">Private</td><td data-l="Why">Nothing outside should ever open a connection to it.</td></tr>
+        <tr><th scope="row">Load balancer</th><td data-l="Subnet">Public</td><td data-l="Why">It is the front door.</td></tr>
+        <tr><th scope="row">Web or app servers</th><td data-l="Subnet">Usually private</td><td data-l="Why">Put them behind the load balancer; only it needs to be reachable.</td></tr>
+        <tr><th scope="row">NAT gateway</th><td data-l="Subnet"><strong>Public</strong></td><td data-l="Why">It needs its own route out to do its job.</td></tr>
+        <tr><th scope="row">Bastion host</th><td data-l="Subnet">Public</td><td data-l="Why">You have to be able to reach it to jump from it.</td></tr>
+        <tr><th scope="row">Batch workers</th><td data-l="Subnet">Private</td><td data-l="Why">They call out; nothing calls in.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 04 -->
+<section id="s04" aria-labelledby="h04">
+  <h2 id="h04"><span class="n">04</span> NAT gateway and NAT instance</h2>
+  <p class="thesis">Two ways to give a private subnet a way out. One is managed, one is an EC2 instance you babysit.</p>
+  <div class="tw">
+    <table>
+      <caption>Managed against self-run</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">NAT gateway</th><th scope="col">NAT instance</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Availability</th><td data-l="NAT gateway">Highly available within its AZ. Create one per AZ for resilience.</td><td data-l="NAT instance">You script your own failover between instances.</td></tr>
+        <tr><th scope="row">Bandwidth</th><td data-l="NAT gateway">Scales to <strong>45 Gbps</strong></td><td data-l="NAT instance">Whatever the instance type gives</td></tr>
+        <tr><th scope="row">Maintenance</th><td data-l="NAT gateway">Managed by AWS</td><td data-l="NAT instance">Yours — OS patches, software, the lot</td></tr>
+        <tr><th scope="row">Cost</th><td data-l="NAT gateway">Per hour plus per GB processed</td><td data-l="NAT instance">Instance cost plus network charges</td></tr>
+        <tr><th scope="row">Security groups</th><td data-l="NAT gateway"><strong>Cannot have one</strong></td><td data-l="NAT instance">Yes</td></tr>
+        <tr><th scope="row">Usable as a bastion host</th><td data-l="NAT gateway">No</td><td data-l="NAT instance">Yes</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Two traps</span>
+    <p>A NAT gateway <strong>cannot be used by instances in its own subnet</strong> — it serves other subnets that route to it. And it lives in <strong>one AZ</strong>: if that AZ fails, every private subnet pointing at it loses outbound access. Production designs put one in each AZ.</p>
+    <p>NAT instances are legacy. AWS's answer is the gateway; the instance only wins when you need a security group on it or want it to double as a bastion.</p>
+  </div>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> NAT gateways are a recurring cost answer</span>
+    <p>Billed per hour <em>and</em> per gigabyte processed. A private subnet pulling large volumes from S3 through a NAT gateway is paying twice over. The fix is a <a href="#s07">VPC endpoint</a>, which routes that traffic privately and skips the NAT entirely.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 05 -->
+<section id="s05" aria-labelledby="h05">
+  <h2 id="h05"><span class="n">05</span> Route tables and interfaces</h2>
+  <p class="thesis">A route table is a list of rules saying where traffic for a destination should go. An ENI is the virtual network card it arrives on.</p>
+
+  <h3>Route tables</h3>
+  <ul class="tick">
+    <li>A <strong>subnet uses exactly one route table</strong>, though one table can serve many subnets.</li>
+    <li>A <strong>local route</strong> for the VPC CIDR always exists and cannot be deleted. It is what lets everything in the VPC talk to everything else.</li>
+    <li>The <strong>most specific match wins</strong>. A route for <span class="mono">10.0.5.0/24</span> beats <span class="mono">0.0.0.0/0</span>.</li>
+  </ul>
+
+  <h3>Elastic network interfaces</h3>
+  <p>An ENI is a virtual NIC. Each one can carry:</p>
+  <ul class="tick">
+    <li>One primary private IPv4, and more secondary ones</li>
+    <li>One Elastic IP per private IPv4</li>
+    <li>One public IPv4</li>
+    <li>One or more security groups</li>
+    <li>A MAC address</li>
+  </ul>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> ENIs move, but not between zones</span>
+    <p>An ENI can be detached from one instance and attached to another, carrying its addresses and security groups with it — handy for failover, since the address follows the interface. But an ENI is <strong>bound to the Availability Zone it was created in</strong> and cannot cross to another.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 06 -->
+<section id="s06" aria-labelledby="h06">
+  <h2 id="h06"><span class="n">06</span> Security groups and NACLs</h2>
+  <p class="thesis">Two firewalls at two levels. Day 01 gave the summary; this is how the rules actually behave.</p>
+
+  <h3>Security groups</h3>
+  <ul class="tick">
+    <li>Operate at <strong>instance level</strong>, strictly on the network interface.</li>
+    <li>An instance can have several, and there is <strong>no hierarchy or precedence</strong> between them — all rules are pooled and any match permits.</li>
+    <li><strong>Stateful.</strong> Allow traffic inbound and the reply is permitted out automatically, and vice versa.</li>
+    <li><strong>Allow rules only.</strong> There is no way to express a deny.</li>
+  </ul>
+
+  <h3>Network ACLs</h3>
+  <ul class="tick">
+    <li>Operate at <strong>subnet level</strong>, so they apply to every instance in the subnet automatically.</li>
+    <li>Rules are <strong>numbered 1 to 32766</strong> and evaluated lowest first. <strong>The first match wins</strong> and evaluation stops.</li>
+    <li><strong>Stateless.</strong> Return traffic needs its own rule, which is why outbound ephemeral ports must be open.</li>
+    <li>Support <strong>deny as well as allow</strong> — the reason to reach for one.</li>
+    <li>Every NACL ends with an implicit <span class="mono">*</span> rule that denies anything unmatched.</li>
+  </ul>
+
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Default NACL and new NACL behave oppositely</span>
+    <p>The <strong>default</strong> NACL that comes with a VPC <strong>allows all traffic</strong> both ways, so it is invisible until you change it. A <strong>newly created</strong> NACL <strong>denies everything</strong> until you add rules.</p>
+    <p>Attach a fresh NACL to a working subnet and everything stops instantly. This surprises people exactly once.</p>
+  </div>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Two conventions worth adopting</span>
+    <p><strong>Number rules in hundreds</strong> — 100, 200, 300 — so there is room to insert one later without renumbering everything.</p>
+    <p><strong>Leave the default NACL alone.</strong> Create a new one and attach it to the subnets that need it. Editing the default affects every subnet that has not been given its own, including ones added later by somebody else.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 07 -->
+<section id="s07" aria-labelledby="h07">
+  <h2 id="h07"><span class="n">07</span> VPC endpoints</h2>
+  <p class="thesis">Reach AWS services from a private subnet without an internet gateway, a NAT, or a public IP anywhere.</p>
+  <p>Without an endpoint, an instance in a private subnet calling S3 goes out through the NAT gateway, across the public internet, and back into AWS. You pay NAT charges for traffic that never needed to leave.</p>
+  <div class="tw">
+    <table>
+      <caption>Two kinds</caption>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Gateway endpoint</th><th scope="col">Interface endpoint</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">How it works</th><td data-l="Gateway endpoint">An entry in the <strong>route table</strong></td><td data-l="Interface endpoint">An <strong>ENI</strong> with a private IP in your subnet</td></tr>
+        <tr><th scope="row">Supports</th><td data-l="Gateway endpoint"><strong>S3 and DynamoDB only</strong></td><td data-l="Interface endpoint">Most other AWS services</td></tr>
+        <tr><th scope="row">Cost</th><td data-l="Gateway endpoint"><strong>Free</strong></td><td data-l="Interface endpoint">Per hour plus per GB</td></tr>
+        <tr><th scope="row">Security groups</th><td data-l="Gateway endpoint">No — controlled by endpoint policy</td><td data-l="Interface endpoint">Yes, it is an ENI</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> The gateway endpoint is free money</span>
+    <p>S3 and DynamoDB gateway endpoints cost nothing and remove NAT charges for that traffic entirely. If a question mentions private instances, heavy S3 traffic, and a cost concern, this is almost always the answer.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 08 -->
+<section id="s08" aria-labelledby="h08">
+  <h2 id="h08"><span class="n">08</span> Connecting VPCs</h2>
+  <p class="thesis">Three ways to join networks, and the first has a limit that forces the third.</p>
+  <div class="cols three">
+    <div class="card">
+      <h3><span class="w">One to one</span> VPC peering</h3>
+      <ul>
+        <li>A direct link between two VPCs, same or different account, same or different Region</li>
+        <li>Traffic stays on the AWS network</li>
+        <li><strong>Not transitive</strong> — A↔B and B↔C does not give A↔C</li>
+        <li><strong>CIDRs must not overlap</strong>, or the peering fails</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Shared subnets</span> VPC sharing</h3>
+      <ul>
+        <li>One account owns the VPC, others launch resources into its subnets</li>
+        <li>Fewer VPCs to manage, less duplicated networking</li>
+        <li>Resources stay owned by their own accounts</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Hub and spoke</span> Transit gateway</h3>
+      <ul>
+        <li>A central hub every VPC connects to once</li>
+        <li>Replaces a mesh of peerings</li>
+        <li>Much less to manage as the count grows</li>
+        <li>Also terminates VPN and Direct Connect</li>
+      </ul>
+    </div>
+  </div>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Why peering stops scaling</span>
+    <p>Peering is not transitive, so connecting everything to everything needs a full mesh. Four VPCs need 6 peerings; ten need 45. The formula is n(n−1)/2, and it is why <strong>"we have many VPCs" almost always means transit gateway</strong> on the exam.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 09 -->
+<section id="s09" aria-labelledby="h09">
+  <h2 id="h09"><span class="n">09</span> Reaching on-premises</h2>
+  <p class="thesis">Three options for hybrid. The difference is whether the traffic crosses the public internet.</p>
+  <div class="tw">
+    <table>
+      <caption>Hybrid connectivity</caption>
+      <thead><tr><th scope="col">Option</th><th scope="col">Path</th><th scope="col">For</th></tr></thead>
+      <tbody>
+        <tr><th scope="row">Site-to-Site VPN</th><td data-l="Path"><strong>Over the internet</strong>, in an encrypted tunnel</td><td data-l="For">Quick to set up, cheap. Bandwidth and latency vary with the internet.</td></tr>
+        <tr><th scope="row">VPN CloudHub</th><td data-l="Path">Over the internet, hub and spoke</td><td data-l="For">Several sites connecting to AWS <em>and</em> to each other through it.</td></tr>
+        <tr><th scope="row">Direct Connect</th><td data-l="Path"><strong>A private physical link</strong>, never the internet</td><td data-l="For">Consistent latency and high throughput. Weeks to provision, and it costs.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>A Site-to-Site VPN has two ends: a <strong>virtual private gateway</strong> on the AWS side and a <strong>customer gateway</strong> representing your router. Direct Connect uses a dedicated line, presented as an 802.1Q VLAN.</p>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> Private subnets can reach on-premises directly</span>
+    <p>A private subnet does not need a public subnet or a NAT to talk to your data centre. The route goes to the <strong>virtual private gateway</strong>, which is not an internet path, so the subnet stays private while still reaching internal systems.</p>
+  </div>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> The exam shorthand</span>
+    <p>Needs it working <strong>today</strong>, or as a backup → <strong>VPN</strong>. Needs <strong>consistent</strong> performance for steady heavy traffic → <strong>Direct Connect</strong>. Wants both → Direct Connect with a VPN as failover, which is the standard resilient answer.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 10 -->
+<section id="s10" aria-labelledby="h10">
+  <h2 id="h10"><span class="n">10</span> Bastion hosts</h2>
+  <p class="thesis">A single hardened door into private instances, so they need no exposure of their own.</p>
+  <ul class="tick">
+    <li>Sits in a <strong>public subnet</strong> and is the only thing reachable from outside.</li>
+    <li>You SSH to it, then from it to the private instances.</li>
+    <li>The private instances' security group should <strong>allow SSH from the bastion's security group</strong>, not from an IP range — so it keeps working as the bastion is replaced.</li>
+    <li>Lock the bastion's own inbound rule to your office or VPN addresses.</li>
+  </ul>
+  <div class="call note">
+    <span class="lbl"><span class="tag">Note</span> The modern alternative</span>
+    <p><strong>AWS Systems Manager Session Manager</strong> gives shell access to private instances with no bastion, no open SSH port and no key pairs, logging every session. If a question stresses removing SSH exposure or auditing access, that is the answer rather than a better-configured bastion.</p>
+  </div>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 11 -->
+<section id="s11" aria-labelledby="h11">
+  <h2 id="h11"><span class="n">11</span> Seeing the traffic</h2>
+  <p class="thesis">Two tools. One records that a connection happened; the other captures what was in it.</p>
+  <div class="cols">
+    <div class="card">
+      <h3><span class="w">Metadata</span> VPC flow logs</h3>
+      <ul>
+        <li>Records source, destination, ports, protocol, bytes, and accept or reject</li>
+        <li><strong>Not the packet contents</strong></li>
+        <li>Capture at VPC, subnet or ENI level</li>
+        <li>Publish to CloudWatch Logs, S3, or Data Firehose</li>
+        <li>The first stop for "why is this connection refused"</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3><span class="w">Full packets</span> Traffic mirroring</h3>
+      <ul>
+        <li>Copies actual packets from an ENI to a monitoring appliance</li>
+        <li>For deep content inspection and threat detection</li>
+        <li>Far more data, and far more cost</li>
+        <li>Used when metadata is not enough</li>
+      </ul>
+    </div>
+  </div>
+  <div class="call good">
+    <span class="lbl"><span class="tag">Good news</span> Flow logs answer the commonest question</span>
+    <p>A rejected entry tells you traffic was blocked by a security group or NACL; an accepted one tells you it got through and the problem is further up. That single distinction resolves most connectivity debugging, and it is why flow logs are worth turning on before you need them.</p>
+  </div>
+  <p class="fine">Flow log destinations can feed onward into Athena for querying, QuickSight for dashboards, or an alerting pipeline — the class listed S3, CloudWatch, Kinesis, SNS, Athena and QuickSight as the usual landing spots.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+<!-- 12 -->
+<section id="s12" aria-labelledby="h12">
+  <h2 id="h12"><span class="n">12</span> Lab ahead: build a VPC</h2>
+  <p class="thesis">Module 7's guided lab, flagged in class as the next session's demo. Not done yet.</p>
+  <p>Everything on this page is about to be assembled by hand. Worth knowing the order before starting, because each step depends on the one before it:</p>
+  <ol class="steps">
+    <li>Create the <b>VPC</b> with a CIDR — and size it properly, because <a href="#s02">it cannot be changed later</a>.</li>
+    <li>Create <b>subnets</b>, at least one public and one private, in <b>different Availability Zones</b>.</li>
+    <li>Create an <b>internet gateway</b> and attach it to the VPC. Creating it is not enough; it has to be attached.</li>
+    <li>Edit the public subnet's <b>route table</b>: add <span class="mono">0.0.0.0/0 → internet gateway</span>. This is the step that makes it public.</li>
+    <li>Create a <b>NAT gateway in the public subnet</b>, with an Elastic IP.</li>
+    <li>Point the private subnet's route table at <span class="mono">0.0.0.0/0 → NAT gateway</span>.</li>
+    <li>Create <b>security groups</b>, then launch instances and confirm the private one can reach out but cannot be reached.</li>
+  </ol>
+  <div class="call caution">
+    <span class="lbl"><span class="tag">Caution</span> Where this usually goes wrong</span>
+    <p>Three failures account for most of them: the internet gateway is <strong>created but not attached</strong>; the route table is edited for the <strong>wrong subnet</strong>; or the NAT gateway is placed in the <strong>private</strong> subnet, where it cannot reach the internet to do its job.</p>
+  </div>
+  <p class="fine">This section will be rewritten with what actually happened once the lab is done.</p>
+  <a class="top-link" href="#top">↑ top</a>
+</section>
+
+</main>
+
+<footer id="sources">
+  <h2>Sources</h2>
+  <p>Class notes expanded and checked against AWS documentation. Verified 15 September 2026.</p>
+  <ol>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/subnet-sizing.html">AWS — Subnet CIDR blocks</a> (the five reserved addresses, /28 to /16)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-network-acls.html">AWS — Network ACLs</a> (rule numbers 1–32766, first match wins, stateless)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-security-groups.html">AWS — Security groups</a></li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/vpc-nat-gateway.html">AWS — NAT gateways</a></li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/peering/what-is-vpc-peering.html">AWS — VPC peering</a> (non-transitive, no overlapping CIDRs)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html">AWS — VPC endpoints</a> (gateway and interface types)</li>
+    <li><a href="https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs.html">AWS — VPC flow logs</a></li>
+  </ol>
+  <p class="disc">Personal study notes. Diagrams are redrawn from class material, not reproduced. Not affiliated with or endorsed by Amazon Web Services. Section 12 describes a lab that has not been run yet.</p>
+</footer>
+
+</div>
+</body>
+</html>

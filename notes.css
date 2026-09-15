@@ -560,3 +560,24 @@ li.soon .placeholder{
 .persp .pt{font-size:15px;font-weight:650;color:var(--ink);display:block;margin-bottom:4px}
 .persp .pw{font:600 11px/1.5 var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--accent);display:block;margin-bottom:6px}
 .persp .pb{font-size:13.5px;line-height:1.5;color:var(--ink-2);margin:0}
+
+/* "Lab" badge on day cards and page headers */
+.daycard .lab,.chip.lab{
+  display:inline-block;font:700 11px/1.4 var(--mono);letter-spacing:.09em;
+  text-transform:uppercase;color:var(--good);background:var(--good-soft);
+  border:1px solid var(--good-line);padding:3px 8px;border-radius:5px
+}
+.daycard .lab{margin-left:8px;vertical-align:2px}
+.chip.lab{padding:6px 10px;border-radius:6px}
+
+/* pricing / purchase option cards */
+.buy{display:grid;grid-template-columns:repeat(4,1fr);gap:11px;margin:0}
+@media(max-width:860px){.buy{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.buy{grid-template-columns:1fr}}
+.buy>div{border:1px solid var(--line);border-radius:9px;padding:14px;background:var(--panel)}
+.buy .bn{display:block;font:700 11.5px/1.4 var(--mono);letter-spacing:.07em;text-transform:uppercase;margin-bottom:9px}
+.buy ul{margin:0;padding-left:16px;font-size:13px;color:var(--ink-2)}
+.buy li{margin-bottom:5px}
+.buy li:last-child{margin-bottom:0}
+.buy .b1 .bn{color:var(--note)} .buy .b2 .bn{color:var(--good)}
+.buy .b3 .bn{color:var(--danger)} .buy .b4 .bn{color:var(--accent)}
